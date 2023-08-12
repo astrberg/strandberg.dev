@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title> {% if page.title %} {{ page.title }} | {% endif %} </title>
     <link href="media/{{ site.style }}-screen.css" type="text/css" rel="stylesheet" media="screen">
     <link href="media/{{ site.style }}-print.css" type="text/css" rel="stylesheet" media="print">
   </head>
@@ -12,4 +11,7 @@
       </div>
     </div>
   </body>
+  <footer>
+    <p>{% if base.updated %} {{ base.updated }} | {% endif %}</p>
+  </footer>
 </html>
