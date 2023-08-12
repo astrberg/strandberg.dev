@@ -54,8 +54,8 @@ __University of Mississippi, Oxford__
 [Thesis: Head impact detection with sensor fusion and machine learning](https://urn.kb.se/resolve?urn=urn:nbn:se:ltu:diva-90124)
 
 
-### Footer
+<!-- ### Footer
 
-Last updated: August 2023
+Last updated: August 2023 -->
 
 
