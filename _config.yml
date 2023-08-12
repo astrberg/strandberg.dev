@@ -1,2 +1,7 @@
-title: Aron Strandberg
-description: Personal website
+title: Developer
+author:
+  name: astrberg
+  email: aron@strandberg.dev
+description: Aron Strandberg's personal website
+markdown: GFM
+theme: minima
