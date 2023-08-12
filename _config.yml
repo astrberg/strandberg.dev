@@ -4,3 +4,9 @@ author:
   email: aron@strandberg.dev
 description: Aron Strandberg's personal website
 theme: minima
+
+minima:
+  social_links:
+    - { platform: github,  user_url: "https://github.com/astrberg" }
+    - { platform: linkedin, user_url: "https://www.linkedin.com/in/aron-strandberg" }
+    - { platform: stackoverflow, user_url: "https://stackoverflow.com/users/10439888/aron-strandberg" }
