@@ -1,8 +1,6 @@
 ---
 layout: me
-title: Aron Strandberg
-description: Software Engineer
-updated: August 2023
+title: Aron Strandberg | Software Engineer
 ---
 # Aron Strandberg
 Software Engineer with a Masters in Computer Science at Luleå University of Technology.
@@ -49,3 +47,8 @@ __University of Mississippi, Oxford__
 ### Location
 
 Stockholm, Sweden
+
+### Updated
+
+August 2023
+
