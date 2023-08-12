@@ -11,14 +11,19 @@ Software Engineer with a Masters in Computer Science at Luleå University of Tec
   | <a href="https://www.linkedin.com/in/aron-strandberg">LinkedIn</a>
 </div>
 
+### Location
+
+Stockholm, Sweden
+
 
 ## Currently
 
 Software Engineer at [Alrik.com](https://alrik.com)
 
-### Location
+## Previously
 
-__Stockholm, Sweden__
+Software Engineer, 3 years at [Futureordering.com](https://futureordering.com)
+
 
 
 ### Specialized in
