@@ -3,7 +3,7 @@ layout: me
 title: Aron Strandberg | Software Engineer
 ---
 # Aron Strandberg
-Software Engineer with a Masters in Computer Science at Luleå University of Technology.
+Software Engineer with a Masters in Computer Science at Luleå University of Technology
 
 <div id="webaddress">
   <a href="aron@strandberg.dev">aron@strandberg.dev</a> 
