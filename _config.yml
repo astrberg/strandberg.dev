@@ -6,6 +6,7 @@ description: Aron Strandberg's personal website
 theme: minima
 
 minima:
+  skin: dark
   social_links:
     - { platform: github,  user_url: "https://github.com/astrberg" }
     - { platform: linkedin, user_url: "https://www.linkedin.com/in/aron-strandberg" }
