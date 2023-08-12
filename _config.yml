@@ -4,7 +4,7 @@ author:
   email: aron@strandberg.dev
 description: Aron Strandberg's personal website
 theme: minima
-
+markdown: GFM
 minima:
   skin: dark
   social_links:
