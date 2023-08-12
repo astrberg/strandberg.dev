@@ -15,10 +15,6 @@ Software Engineer with a Masters in Computer Science at Luleå University of Tec
 
 Software Engineer at [Alrik.com](https://alrik.com)
 
-### Previously
-
-Software Engineer, 3 years at [Futureordering.com](https://futureordering.com)
-
 ### Specialized in
 
 I specialize in bridging technology and finance, excelling in backend development and microservices architecture. My expertise encompasses integrating complex systems, automating infrastructure, and optimizing cloud solutions for cost-effectiveness. With a knack for innovation and practical problem-solving, I'm uniquely positioned to drive impactful advancements at the intersection of technology and real-world challenges.
