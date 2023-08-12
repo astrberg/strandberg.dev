@@ -13,10 +13,6 @@ Software Engineer with a Masters in Computer Science at Luleå University of Tec
   | <a href="https://www.linkedin.com/in/aron-strandberg">LinkedIn</a>
 </div>
 
-### Location
-
-Stockholm, Sweden
-
 ## Currently
 
 Software Engineer at [Alrik.com](https://alrik.com)
@@ -49,3 +45,7 @@ __University of Mississippi, Oxford__
 ## Publications
 
 [Thesis: Head impact detection with sensor fusion and machine learning](https://urn.kb.se/resolve?urn=urn:nbn:se:ltu:diva-90124)
+
+### Location
+
+Stockholm, Sweden
