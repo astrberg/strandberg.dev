@@ -6,7 +6,7 @@ title: Aron Strandberg | Software Engineer
 Software Engineer with a Masters in Computer Science at Luleå University of Technology
 
 <div id="webaddress">
-  <a href="aron@strandberg.dev">aron@strandberg.dev</a> 
+  <a href="mailto:aron@strandberg.dev">aron@strandberg.dev</a> 
   | <a href="https://stackoverflow.com/users/10439888/aron-strandberg">Stackoverflow</a>
   | <a href="https://www.linkedin.com/in/aron-strandberg">LinkedIn</a>
 </div>
