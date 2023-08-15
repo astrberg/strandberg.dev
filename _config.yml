@@ -1,2 +1,4 @@
 markdown: kramdown
 style: kjhealy
+plugins:
+  - jekyll-seo-tag
