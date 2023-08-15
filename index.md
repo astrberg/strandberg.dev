@@ -30,7 +30,7 @@ __Luleå University of Technology, Luleå__
 
 - Masters Computer Science, Information and Communication Technology
 
-`2020 spring term`
+`2020`
 __University of Mississippi, Oxford__
 
 - Chancellor’s Honor Roll; 4.0 GPA
