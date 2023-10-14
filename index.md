@@ -46,5 +46,5 @@ Stockholm, Sweden
 
 ### Updated
 
-August 2023
+October 2023
 
