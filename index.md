@@ -13,7 +13,7 @@ Software Engineer with a Masters in Computer Science at Luleå University of Tec
 
 ## Currently
 
-Software Engineer at [Alrik.com](https://alrik.com)
+Software Engineer at [Alrik.com](https://alrik.com) in Stockholm, Sweden.
 
 ### Skills
 
