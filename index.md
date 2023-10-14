@@ -2,7 +2,7 @@
 layout: me
 ---
 # Aron Strandberg
-Software Engineer (Backend)
+Software Engineer (Backend) 🚀
 
 <div id="webaddress">
   <a href="mailto:aron@strandberg.dev">aron@strandberg.dev</a> 
