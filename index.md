@@ -21,7 +21,7 @@ I specialize in bridging technology and finance, excelling in backend developmen
 
 ### Skills
 
-Git, Bash, C#, .NET, Python, SQL, Docker, Terraform, Azure, GCP, Agile development (prefer Kanban), Machine learning (ML).
+[Git](https://git-scm.com/), [Bash](https://www.gnu.org/software/bash/), [C# .NET](https://dotnet.microsoft.com/en-us/languages/csharp), [Python](https://www.python.org/), SQL, [DocumentDB](https://aws.amazon.com/documentdb/), [Docker](https://www.docker.com/), [Terraform](https://www.terraform.io/), [Azure](https://azure.microsoft.com/), [GCP](https://cloud.google.com/), Agile development (prefer Kanban), Machine learning (ML).
 
 ## Education
 
