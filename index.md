@@ -4,8 +4,6 @@ layout: me
 # Aron Strandberg
 Software Engineer (Backend) 🚀
 
-<img src="./media/profile_photo.jpg" width="50%" display="flex"/>
-
 <div id="webaddress">
   <a href="mailto:aron@strandberg.dev">aron@strandberg.dev</a> 
   | <a href="https://stackoverflow.com/users/10439888/aron-strandberg">Stackoverflow</a>
