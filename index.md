@@ -4,7 +4,7 @@ layout: me
 # Aron Strandberg
 Software Engineer (Backend) 🚀
 
-![Aron Strandberg](./media/profile_photo.JPG "Aron Strandberg")
+<img src="./media/profile_photo.jpg" width="50%"/>
 
 <div id="webaddress">
   <a href="mailto:aron@strandberg.dev">aron@strandberg.dev</a> 
