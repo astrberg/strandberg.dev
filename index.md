@@ -19,7 +19,9 @@ Building scalable cloud solutions with a focus on backend development and micros
 
 ### Skills 💻
 
-[Git](https://git-scm.com/){:target="_blank"}, [Bash](https://www.gnu.org/software/bash/){:target="_blank"}, [C# .NET](https://dotnet.microsoft.com/en-us/languages/csharp){:target="_blank"}, [Python](https://www.python.org/){:target="_blank"}, SQL, [Docker](https://www.docker.com/){:target="_blank"}, [Terraform](https://www.terraform.io/){:target="_blank"}, [Azure](https://azure.microsoft.com/){:target="_blank"}, [GCP](https://cloud.google.com/){:target="_blank"}, Agile development, ML is cool and Github Copilot is nice. See me presenting our project [Supervision](https://www.youtube.com/watch?v=oNadSzKORkI){:target="_blank"}
+[Git](https://git-scm.com/){:target="_blank"}, [Bash](https://www.gnu.org/software/bash/){:target="_blank"}, [C# .NET](https://dotnet.microsoft.com/en-us/languages/csharp){:target="_blank"}, [Python](https://www.python.org/){:target="_blank"}, SQL, [Docker](https://www.docker.com/){:target="_blank"}, [Terraform](https://www.terraform.io/){:target="_blank"}, [Azure](https://azure.microsoft.com/){:target="_blank"}, [GCP](https://cloud.google.com/){:target="_blank"}, Agile development
+
+[Github Copilot](https://github.com/features/copilot) is a nice tool I recommend. See me presenting our project [Supervision](https://www.youtube.com/watch?v=oNadSzKORkI){:target="_blank"}
 
 ## Education
 
