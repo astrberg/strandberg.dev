@@ -19,7 +19,7 @@ Building scalable cloud solutions with a focus on backend development and micros
 
 ### Skills 💻
 
-[Git](https://git-scm.com/), [Bash](https://www.gnu.org/software/bash/), [C# .NET](https://dotnet.microsoft.com/en-us/languages/csharp), [Python](https://www.python.org/), SQL, [Docker](https://www.docker.com/), [Terraform](https://www.terraform.io/), [Azure](https://azure.microsoft.com/), [GCP](https://cloud.google.com/), Agile development, ML is cool and Github Copilot is nice. See me presenting our project [Supervision](https://www.youtube.com/watch?v=oNadSzKORkI)
+[Git](https://git-scm.com/){:target="_blank"}, [Bash](https://www.gnu.org/software/bash/){:target="_blank"}, [C# .NET](https://dotnet.microsoft.com/en-us/languages/csharp){:target="_blank"}, [Python](https://www.python.org/){:target="_blank"}, SQL, [Docker](https://www.docker.com/){:target="_blank"}, [Terraform](https://www.terraform.io/){:target="_blank"}, [Azure](https://azure.microsoft.com/){:target="_blank"}, [GCP](https://cloud.google.com/){:target="_blank"}, Agile development, ML is cool and Github Copilot is nice. See me presenting our project [Supervision](https://www.youtube.com/watch?v=oNadSzKORkI){:target="_blank"}
 
 ## Education
 
@@ -36,7 +36,7 @@ __University of Mississippi, Oxford__
 
 ## Publications
 
-[Thesis: Head impact detection with sensor fusion and machine learning](https://urn.kb.se/resolve?urn=urn:nbn:se:ltu:diva-90124)
+[Thesis: Head impact detection with sensor fusion and machine learning](https://urn.kb.se/resolve?urn=urn:nbn:se:ltu:diva-90124){:target="_blank"}
 
 ### Location
 
@@ -44,5 +44,5 @@ Stockholm, Sweden
 
 ### Updated
 
-October 2023
+May 2024
 
