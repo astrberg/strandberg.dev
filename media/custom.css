@@ -1,0 +1,9 @@
+@import url("kjhealy-screen.css");
+
+body {
+    background: url("background.svg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
