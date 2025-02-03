@@ -42,7 +42,7 @@ __University of Mississippi, Oxford__
 
 Stockholm, Sweden
 
-### Updated
-
-Feb 2025
-
+<footer>
+  <p>Last updated: {{ site.time | date: '%B %d, %Y' }} | <a href="https://github.com/astrberg/strandberg.dev">View Codebase on GitHub</a></p>
+  <p>© {{ site.time | date: '%Y' }} Aron Strandberg</p>
+</footer>
