@@ -54,9 +54,6 @@ Built RESTful event-driven microservices handling food & beverage menus and thou
 `2021`
 **[Supervision](https://www.youtube.com/watch?v=oNadSzKORkI){:target="_blank"}** - Student project built with Python and React.js, integrated with Future Ordering's digital ordering platform.
 
-`2021-Present`
-**[DayZ Game Server](https://github.com/astrberg/dayz-config){:target="_blank"}** - Self-hosted game server on Ubuntu LTS with automated Discord notifications via Bash scripts. Managed remotely via SSH and VS Code for configuration updates and server administration.
-
 ## Education
 
 `2016-2022`
