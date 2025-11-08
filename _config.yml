@@ -1,6 +1,8 @@
-title: Software Engineer
-description: Software engineer based in Stockholm, Sweden. I am passionate about building software that is scalable, maintainable and user-friendly.
+url: "https://strandberg.dev"
+author: "Aron Strandberg"
+locale: "en_US"
 markdown: kramdown
 style: kjhealy
 plugins:
   - jekyll-seo-tag
+  - jekyll-sitemap

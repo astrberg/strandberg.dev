@@ -1,12 +1,8 @@
 @import url("kjhealy-screen.css");
 
 html {
-    background: url("background.svg");
-    background-size: cover;
-    background-position: center;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     background-attachment: fixed;
-    background-repeat: no-repeat;
-    height: 110%;
 }
 
 footer {
@@ -16,7 +12,36 @@ footer {
 code {
 	font: normal normal;
 	font-size: 100%;
-	/*line-height: 1em;*/
 	font-family: Menlo,monospace,sans-serif;
 	color: #aaa;
+}
+
+@media (max-width: 768px) {
+    p code {
+        position: static;
+        display: block;
+        margin-bottom: 0.5em;
+        font-size: 85%;
+    }
+    
+    ul {
+        left: 0;
+        width: 100%;
+        padding-left: 1em;
+    }
+    
+    #main {
+        padding: 20px 15px;
+    }
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    p code {
+        position: relative !important;
+        left: -11% !important;
+    }
 }
