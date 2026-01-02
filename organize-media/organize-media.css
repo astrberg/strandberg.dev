@@ -1,0 +1,216 @@
+:root {
+  --primary-color: #a00;
+  --primary-hover: #c00;
+  --success-color: #388e3c;
+  --error-color: #a00;
+  --text-muted: #666;
+  --text-light: #aaa;
+  --bg-light: #f5f5f5;
+  --bg-white: #fff;
+  --border-color: #ddd;
+  --border-light: #aaa;
+  --mock-bg: #fff5e6;
+  --mock-border: #f0c36d;
+  --mock-text: #b35f00;
+  --live-bg: #e8f5e9;
+  --live-border: #a5d6a7;
+  --live-text: #256029;
+  --debug-red: #ff3b30;
+}
+
+#metadataDisplay {
+  margin-top: 1em;
+  background: #f9f9f9;
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--primary-color);
+  padding: 1em;
+  font-size: 1em;
+  color: #333;
+}
+
+.hidden { 
+  display: none !important; 
+}
+.metadata {
+  margin-top: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+.metadata-json-container {
+  margin-top: 0.75em;
+}
+
+.metadata-json {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace;
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  max-height: 400px;
+  overflow: auto;
+}
+
+#upload-form {
+  width: 65%;
+  max-width: 720px;
+  margin: 2em auto;
+  padding: 1.5em;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--primary-color);
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  #upload-form {
+    width: 90%;
+    margin: 1em auto;
+    padding: 1em;
+  }
+}
+
+#upload-form > * {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#g_id_signin {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1em;
+}
+
+#signin-status {
+  margin-bottom: 1em;
+  text-align: center;
+}
+
+#signed-in-message {
+  color: var(--success-color);
+  font-weight: bold;
+}
+
+#upload-form input,
+#upload-form button {
+  border: 1px solid var(--border-light);
+  padding: 0.6em 0.75em;
+  font: inherit;
+  font-size: 1em;
+}
+
+#uploadButton {
+  background-color: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+#uploadButton:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+#uploadButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+#fileInfo {
+  color: var(--text-light);
+}
+
+#progress {
+  height: 1em;
+  background: #eee;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#progressBar {
+  background-color: var(--primary-color);
+  height: 100%;
+  width: 0;
+  border-radius: 4px 0 0 4px;
+  transition: width 0.2s ease;
+}
+
+#result {
+  min-height: 2.5em;
+  background-color: var(--bg-light);
+  border-left: 3px solid var(--primary-color);
+  padding: 0.75em 1em;
+}
+
+#mockBanner {
+  padding: 0.5em 0.75em;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.95em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#mockBanner.mode-mock {
+  background: var(--mock-bg);
+  border: 1px solid var(--mock-border);
+  color: var(--mock-text);
+}
+
+#mockBanner.mode-live {
+  background: var(--live-bg);
+  border: 1px solid var(--live-border);
+  color: var(--live-text);
+}
+
+#bannerSignout {
+  background: #eee;
+  border: 1px solid var(--border-light);
+  color: #333;
+  padding: 0.4em 1em;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-left: 1em;
+  transition: background 0.2s;
+}
+
+#bannerSignout:hover {
+  background: #e57373;
+  color: var(--bg-white);
+  border-color: var(--primary-color);
+}
+
+#downloadLink {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  padding: 0.5em 0.75em;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+#downloadLink:hover {
+  background-color: var(--primary-hover);
+}
+
+.error {
+  color: var(--error-color);
+  font-weight: bold;
+}
+
+.success {
+  color: var(--text-muted);
+}
