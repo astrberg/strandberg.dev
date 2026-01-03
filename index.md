@@ -46,7 +46,7 @@ Built RESTful event-driven microservices handling food & beverage menus and thou
 ## Projects
 
 `2025`
-**[Schema Forge](https://github.com/astrberg/schema-forge){:target="_blank"}** - FastAPI service deployed on Cloud Run that automatically generates JSON schemas from CSV files using Google Gemini AI. Integrates with Cloud Storage, Eventarc for event-driven processing, and Cloud Logging.
+**[Organize Media](/organize-media/)** - Media organization tool with Google Cloud Run microservices backend for dating videos missing timestamps. Uses three detection algorithms: filename parsing, OCR for printed dates, and Gemini AI estimation. Frontend built with Jekyll, featuring Google Sign-In authentication and JWT token handling.
 
 `2024`
 **[Venice AI Chatbot](https://github.com/astrberg/chatbot-ui){:target="_blank"}** - Developed a Python FastAPI backend deployed on Google Cloud Run with WebSocket communication, Google OAuth authentication, and Venice AI integration. Forked and customized React/TypeScript frontend.
