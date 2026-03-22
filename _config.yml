@@ -1,6 +1,7 @@
 url: "https://strandberg.dev"
-title: "SEB Classic"
-description: "Enter the Campus — a browser-based fantasy adventure set in SEB headquarters."
+title: "Aron Strandberg - Cloud Backend Engineer"
+tagline: "Stockholm, Sweden"
+description: "Cloud Backend Engineer based in Stockholm, specializing in GCP, Python and C#."
 author: "Aron Strandberg"
 locale: "en_US"
 markdown: kramdown
