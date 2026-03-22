@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    {% seo %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link href="/assets/css/resume.css" rel="stylesheet">
+  </head>
+  <body>
+    <a href="/" class="back-link no-print">&larr; Back to World</a>
+    <main class="resume">
+      {{ content }}
+    </main>
+    <footer class="resume-footer no-print">
+      <p>Last updated: {{ site.time | date: '%B %d, %Y' }} &middot; <a href="https://github.com/astrberg/strandberg.dev" target="_blank">Source on GitHub</a></p>
+      <p>&copy; {{ site.time | date: '%Y' }} Aron Strandberg</p>
+    </footer>
+  </body>
+</html>

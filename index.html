@@ -1,0 +1,66 @@
+---
+layout: null
+title: SEB Classic
+description: Enter the Campus — a browser-based fantasy adventure set in SEB headquarters.
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    {% seo %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link href="/assets/css/login.css" rel="stylesheet">
+  </head>
+  <body>
+
+    <!-- Three.js canvas injected by login.js as #bg-canvas -->
+
+    <div id="login-screen">
+
+      <div id="logo-container">
+        <div id="title-world-of">WORLD OF</div>
+        <div id="title-warcraft">STRANDBERG</div>
+        <div id="title-classic-wrap">
+          <div id="title-classic">SEB CLASSIC</div>
+        </div>
+      </div>
+
+      <div id="login-card">
+        <div class="realm-banner">
+          <span class="realm-icon">&#x2694;</span>
+          <span>Realm: Solna Campus</span>
+          <span class="realm-icon">&#x2694;</span>
+        </div>
+
+        <button id="play-btn">PLAY NOW</button>
+
+        <div id="loading-bar-container">
+          <div id="loading-bar-track">
+            <div id="loading-bar-fill"></div>
+          </div>
+          <span id="loading-text">Connecting to realm&hellip;</span>
+        </div>
+
+        <p class="login-footer">
+          <a href="/resume/">About Aron</a>
+          <span>&#xB7;</span>
+          <a href="/organize-media/">Tools</a>
+        </p>
+      </div>
+
+    </div><!-- #login-screen -->
+
+    <div id="version-text">Version 1.13.7 (40617)</div>
+    <div id="fade-overlay"></div>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+      }
+    }
+    </script>
+    <script type="module" src="/assets/js/login.js"></script>
+
+  </body>
+</html>

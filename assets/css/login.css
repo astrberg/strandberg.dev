@@ -1,0 +1,258 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #03050e;
+  font-family: 'Palatino Linotype', 'Book Antiqua', 'Georgia', 'Times New Roman', serif;
+}
+
+/* ── Three.js background canvas ── */
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+}
+
+/* ── Login screen overlay ── */
+#login-screen {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 20px;
+}
+
+/* ── Logo ── */
+#logo-container {
+  text-align: center;
+  margin-bottom: 34px;
+  user-select: none;
+}
+
+#title-world-of {
+  font-size: clamp(0.9rem, 2.2vw, 1.35rem);
+  font-weight: bold;
+  color: transparent;
+  background: linear-gradient(180deg, #f0d870 0%, #c89818 45%, #9a6c08 75%, #f0d050 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  letter-spacing: 10px;
+  filter: drop-shadow(0 0 12px rgba(190, 130, 10, 0.5));
+  margin-bottom: 2px;
+}
+
+#title-warcraft {
+  font-size: clamp(2.6rem, 7.5vw, 5.4rem);
+  font-weight: bold;
+  color: transparent;
+  background: linear-gradient(180deg,
+    #fff8c0 0%,
+    #f5e060 12%,
+    #c89010 38%,
+    #9a6808 60%,
+    #7a4c00 78%,
+    #c88a10 92%,
+    #f0d050 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  letter-spacing: 6px;
+  line-height: 1.0;
+  filter: drop-shadow(0 0 30px rgba(200, 145, 10, 0.65))
+          drop-shadow(0 3px 8px rgba(0, 0, 0, 0.9));
+}
+
+/* ── "CLASSIC" badge — dark red banner matching the actual game ── */
+#title-classic-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+#title-classic {
+  display: inline-block;
+  font-size: clamp(0.7rem, 1.8vw, 1.05rem);
+  font-weight: bold;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  color: #e8d4a0;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  background: linear-gradient(180deg, #7a1a1a 0%, #4a0c0c 50%, #3a0808 100%);
+  border: 1px solid #a06020;
+  border-top: 1px solid #d08030;
+  border-bottom: 2px solid #1a0808;
+  padding: 5px 22px 4px;
+  border-radius: 2px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.7), inset 0 1px 0 rgba(220,170,80,0.15);
+}
+
+/* ── Login card ── */
+#login-card {
+  background: linear-gradient(180deg, rgba(8,12,26,0.97) 0%, rgba(3,5,14,0.99) 100%);
+  border: 1px solid #2e2010;
+  border-top: 1px solid #6a4a14;
+  box-shadow:
+    0 0 90px rgba(0,0,0,0.95),
+    0 0 40px rgba(0,0,0,0.7),
+    inset 0 1px 0 rgba(210,160,40,0.08);
+  border-radius: 3px;
+  padding: 28px 36px 24px;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* ── Realm banner ── */
+.realm-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #9a7820;
+  font-size: 0.7rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #1e1808;
+}
+.realm-icon { opacity: 0.55; font-size: 0.65rem; }
+
+/* ── PLAY NOW button ── */
+#play-btn {
+  width: 100%;
+  margin-top: 2px;
+  padding: 14px 0;
+  background: linear-gradient(180deg,
+    #7a5604 0%,
+    #5a3e02 30%,
+    #3c2800 55%,
+    #2a1c00 75%,
+    #3c2800 90%,
+    #5a3e02 100%
+  );
+  border: 1px solid #8a6418;
+  border-bottom: 2px solid #120e00;
+  color: #f0d060;
+  font-size: 0.9rem;
+  font-family: inherit;
+  font-weight: bold;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, color 0.1s;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.95);
+}
+
+#play-btn:hover {
+  background: linear-gradient(180deg,
+    #9e7208 0%,
+    #7a5404 30%,
+    #5a3c02 55%,
+    #3e2c00 75%,
+    #5a3c02 90%,
+    #7a5404 100%
+  );
+  border-color: #c09030;
+  box-shadow: 0 0 22px rgba(160,120,10,0.3), 0 0 10px rgba(240,200,50,0.08);
+  color: #ffe870;
+}
+
+#play-btn:active { transform: translateY(1px); box-shadow: none; }
+
+#play-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Loading bar ── */
+#loading-bar-container {
+  display: none;
+  margin-top: 16px;
+}
+#loading-bar-container.visible { display: block; }
+
+#loading-bar-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #181408;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4a3200, #e0b020, #f0cc40, #e0b020, #4a3200);
+  background-size: 200% 100%;
+  border-radius: 3px;
+  transition: width 0.1s linear;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+#loading-bar-fill.complete {
+  background: #50a840;
+  animation: none;
+}
+
+#loading-text {
+  display: block;
+  color: #4a4438;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 7px;
+  text-align: center;
+}
+
+/* ── Footer links ── */
+.login-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.7rem;
+}
+.login-footer a { color: #3c3622; text-decoration: none; }
+.login-footer a:hover { color: #7a7060; }
+.login-footer span { color: #282410; margin: 0 6px; }
+
+/* ── Version text (bottom-left) ── */
+#version-text {
+  position: fixed;
+  bottom: 12px;
+  left: 16px;
+  color: #2a2820;
+  font-family: monospace;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  z-index: 10;
+  user-select: none;
+}
+
+/* ── Fade overlay ── */
+#fade-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;
+  transition: opacity 0.85s ease;
+}
+#fade-overlay.fading {
+  opacity: 1;
+  pointer-events: all;
+}

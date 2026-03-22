@@ -1,0 +1,211 @@
+/* ── Resume — strandberg.dev/resume ────────────────────────────────────────── */
+
+:root {
+  --bg: #0e0e12;
+  --surface: #16161c;
+  --border: #28283a;
+  --text: #d4d4dc;
+  --text-muted: #8888a0;
+  --accent: #c8a84e;
+  --accent-dim: #6a5a28;
+  --link: #7eaacc;
+  --link-hover: #a8d0ee;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.65;
+  padding: 0;
+}
+
+/* ── Back link ── */
+.back-link {
+  position: fixed;
+  top: 18px;
+  left: 22px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  z-index: 100;
+  transition: color 0.15s;
+}
+.back-link:hover { color: var(--accent); }
+
+/* ── Main resume container ── */
+.resume {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 60px 32px 40px;
+}
+
+/* ── Heading (name) ── */
+.resume h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #f0f0f4;
+  letter-spacing: -0.5px;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.resume h1 + p {
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+/* ── Contact links ── */
+.contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.contact-links a {
+  color: var(--link);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.15s;
+}
+.contact-links a:hover { color: var(--link-hover); }
+
+/* ── Section headings ── */
+.resume h2 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-top: 36px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Date codes ── */
+.resume code {
+  display: inline-block;
+  background: none;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.78rem;
+  padding: 0;
+  margin-top: 14px;
+  margin-bottom: 2px;
+}
+
+/* ── Job titles / items ── */
+.resume p strong {
+  color: #e8e8f0;
+  font-weight: 600;
+}
+
+.resume p {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+/* ── Links in text ── */
+.resume a {
+  color: var(--link);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.resume a:hover {
+  color: var(--link-hover);
+  border-bottom-color: var(--link-hover);
+}
+
+/* ── Lists ── */
+.resume ul {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 8px;
+}
+.resume ul li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.resume ul li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--accent-dim);
+  font-weight: bold;
+}
+
+/* ── Footer ── */
+.resume-footer {
+  max-width: 700px;
+  margin: 24px auto 40px;
+  padding: 20px 32px 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.resume-footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.resume-footer a:hover { color: var(--link); }
+.resume-footer p { margin-bottom: 4px; }
+
+/* ── Print ── */
+@media print {
+  .no-print { display: none !important; }
+
+  :root {
+    --bg: #fff;
+    --text: #1a1a1a;
+    --text-muted: #555;
+    --accent: #6a4e1e;
+    --border: #ddd;
+    --link: #1a5a8a;
+  }
+
+  body {
+    background: #fff;
+    color: #1a1a1a;
+    font-size: 11pt;
+  }
+
+  .resume {
+    max-width: none;
+    padding: 0;
+  }
+
+  .resume h1 { color: #1a1a1a; font-size: 22pt; }
+  .resume h1 + p { color: #444; }
+  .resume h2 { color: #6a4e1e; border-color: #ccc; }
+
+  .contact-links { border-color: #ccc; }
+  .contact-links a { color: #1a5a8a; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .resume {
+    padding: 48px 18px 30px;
+  }
+  .resume h1 { font-size: 1.7rem; }
+  .back-link { top: 10px; left: 12px; }
+}
