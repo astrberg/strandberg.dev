@@ -221,13 +221,32 @@ html, body {
 
 /* ── Footer links ── */
 .login-footer {
-  margin-top: 20px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid #1e1808;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
-.login-footer a { color: #3c3622; text-decoration: none; }
-.login-footer a:hover { color: #7a7060; }
-.login-footer span { color: #282410; margin: 0 6px; }
+.login-footer a {
+  color: #9a7820;
+  text-decoration: none;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+.login-footer a:hover {
+  color: #f0d060;
+  text-shadow: 0 0 8px rgba(200, 150, 20, 0.45);
+}
+.footer-sep {
+  color: #3a2a10;
+  margin: 0 4px;
+  font-size: 0.6rem;
+}
 
 /* ── Version text (bottom-left) ── */
 #version-text {

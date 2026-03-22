@@ -4,7 +4,6 @@ description: "Enter the Campus — a browser-based fantasy adventure set in SEB 
 author: "Aron Strandberg"
 locale: "en_US"
 markdown: kramdown
-style: kjhealy
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
