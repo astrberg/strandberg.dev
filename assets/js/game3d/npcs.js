@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { getHeightAt } from './world.js';
 import { loadGLTF, findClip, cloneModel } from './model-loader.js';
 
-// ── SEB Campus NPC definitions ────────────────────────────────────────────────
+// ── Campus NPC definitions ───────────────────────────────────────────────────
 
 const NPC_DEFS = [
   {
@@ -15,9 +15,9 @@ const NPC_DEFS = [
     color: 0x6080a0,
     patrol: [[-60, -5], [-60, 10], [-45, 5]],
     dialogue: [
-      "Welcome, engineer. I oversee the Cloud Platform Division here at SEB. We're migrating our core banking to GCP this quarter.",
+      "Welcome, engineer. I oversee the Cloud Platform Division. We're migrating our core banking infrastructure to GCP this quarter.",
       "Our Python microservices handle millions of transactions daily. Latency is measured in milliseconds — every optimisation counts.",
-      "SEB has been a pillar of Nordic finance for over a century. We will not let legacy systems slow our digital transformation.",
+      "Nordic finance has a long legacy of trust. We will not let old systems slow our digital transformation.",
     ],
   },
   {

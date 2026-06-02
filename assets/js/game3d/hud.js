@@ -43,9 +43,13 @@ export class HUD3D {
     this._miniCanvas   = document.getElementById('minimap-canvas');
     this._miniCtx      = this._miniCanvas.getContext('2d');
     this._minimapBuilt = false;
+    // Offscreen canvas holds the static minimap background (road, river, abbey)
+    // so drawMinimap() only needs to re-draw the dynamic player/NPC dots each frame
+    this._minimapBg    = null;
 
     this._buildActionBar();
     this._zoneTimer = 0;
+    this._buildMinimapBackground();
   }
 
   // ── Loading bar ────────────────────────────────────────────────────────────
@@ -114,6 +118,10 @@ export class HUD3D {
 
   // ── Chat messages ─────────────────────────────────────────────────────────
   addChat(text, type = 'normal') {
+    // Cap chat history at 30 messages to prevent unbounded DOM growth
+    const existing = this._chatEl.querySelectorAll('.chat-line');
+    if (existing.length >= 30) existing[0].remove();
+
     const el = document.createElement('div');
     el.className = 'chat-line' + (type === 'sys' ? ' sys' : '');
     el.textContent = text;
@@ -124,31 +132,36 @@ export class HUD3D {
   }
 
   // ── Minimap ───────────────────────────────────────────────────────────────
-  drawMinimap(playerPos, npcs) {
-    const ctx  = this._miniCtx;
-    const W    = this._miniCanvas.width;
-    const H    = this._miniCanvas.height;
-    const HALF = 245; // half world size
 
-    ctx.clearRect(0, 0, W, H);
+  /** Renders the static minimap background once to an offscreen canvas.
+   *  Called once at construction — roads, river, and landmark markers never move.
+   */
+  _buildMinimapBackground() {
+    const W = this._miniCanvas.width;
+    const H = this._miniCanvas.height;
+    const HALF = 245;
 
-    // Background
+    const bg  = document.createElement('canvas');
+    bg.width  = W;
+    bg.height = H;
+    const ctx = bg.getContext('2d');
+
+    const toMM = (wx, wz) => ({
+      x: (wx / HALF * 0.5 + 0.5) * W,
+      y: (wz / HALF * 0.5 + 0.5) * H,
+    });
+
+    // Background circle
     ctx.fillStyle = '#1a2810';
     ctx.beginPath();
     ctx.arc(W / 2, H / 2, W / 2 - 1, 0, Math.PI * 2);
     ctx.fill();
 
-    // Clip to circle
+    // Clip to circle for all subsequent static content
     ctx.save();
     ctx.beginPath();
     ctx.arc(W / 2, H / 2, W / 2 - 2, 0, Math.PI * 2);
     ctx.clip();
-
-    // World → minimap coords
-    const toMM = (wx, wz) => ({
-      x: (wx / HALF * 0.5 + 0.5) * W,
-      y: (wz / HALF * 0.5 + 0.5) * H,
-    });
 
     // Road (tan line)
     ctx.strokeStyle = '#7a6a48';
@@ -175,12 +188,48 @@ export class HUD3D {
     }
     ctx.stroke();
 
-    // Abbey (gold square)
+    // Abbey landmark (gold square)
     const abbeyMM = toMM(-80, -20);
     ctx.fillStyle = '#c8a020';
     ctx.fillRect(abbeyMM.x - 5, abbeyMM.y - 4, 10, 8);
 
-    // NPCs dots
+    ctx.restore();
+
+    // Border ring
+    ctx.strokeStyle = '#7a6020';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2, W / 2 - 1, 0, Math.PI * 2);
+    ctx.stroke();
+
+    this._minimapBg = bg;
+  }
+
+  /** Called every frame — blits the cached static background then draws only
+   *  the dynamic player and NPC dots on top. Far cheaper than a full redraw.
+   */
+  drawMinimap(playerPos, npcs) {
+    const ctx  = this._miniCtx;
+    const W    = this._miniCanvas.width;
+    const H    = this._miniCanvas.height;
+    const HALF = 245;
+
+    // Blit the pre-rendered static background
+    ctx.drawImage(this._minimapBg, 0, 0);
+
+    // Clip to circle for dots
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2, W / 2 - 2, 0, Math.PI * 2);
+    ctx.clip();
+
+    // World → minimap coords
+    const toMM = (wx, wz) => ({
+      x: (wx / HALF * 0.5 + 0.5) * W,
+      y: (wz / HALF * 0.5 + 0.5) * H,
+    });
+
+    // NPC dots
     for (const npc of npcs) {
       const nm = toMM(npc.position.x, npc.position.z);
       ctx.fillStyle = npc.hostile ? '#e04040' : '#f0e060';
@@ -197,13 +246,6 @@ export class HUD3D {
     ctx.fill();
 
     ctx.restore();
-
-    // Border ring
-    ctx.strokeStyle = '#7a6020';
-    ctx.lineWidth   = 2;
-    ctx.beginPath();
-    ctx.arc(W / 2, H / 2, W / 2 - 1, 0, Math.PI * 2);
-    ctx.stroke();
   }
 
   // ── Action bar ────────────────────────────────────────────────────────────

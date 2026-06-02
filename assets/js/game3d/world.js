@@ -96,12 +96,37 @@ export function buildTerrain(scene) {
   return { mesh, geo };
 }
 
-/** Sample the terrain height at a world-space (x, z) position. */
+/** Sample the terrain height at a world-space (x, z) position.
+ *  Results are cached in a quantised LRU map (0.5-unit grid, max 512 entries)
+ *  to avoid repeated trig evaluation for slow-moving entities.
+ */
+const _heightCache = new Map();
+const _HEIGHT_CACHE_MAX  = 512;
+const _HEIGHT_CACHE_STEP = 0.5; // grid resolution in world units
+
 export function getHeightAt(x, z) {
+  // Quantise to nearest grid cell
+  const qx = Math.round(x / _HEIGHT_CACHE_STEP);
+  const qz = Math.round(z / _HEIGHT_CACHE_STEP);
+  const key = (qx << 16) ^ (qz & 0xffff); // fast integer key
+
+  const cached = _heightCache.get(key);
+  if (cached !== undefined) return cached;
+
   const u = (x + WORLD_SIZE / 2) / WORLD_SIZE;
   const v = (z + WORLD_SIZE / 2) / WORLD_SIZE;
-  if (u < 0 || u > 1 || v < 0 || v > 1) return 0;
-  return terrainHeight(u, v);
+  const h = (u < 0 || u > 1 || v < 0 || v > 1) ? 0 : terrainHeight(u, v);
+
+  // Simple LRU eviction: clear oldest half when limit is reached
+  if (_heightCache.size >= _HEIGHT_CACHE_MAX) {
+    let evicted = 0;
+    for (const k of _heightCache.keys()) {
+      _heightCache.delete(k);
+      if (++evicted >= _HEIGHT_CACHE_MAX / 2) break;
+    }
+  }
+  _heightCache.set(key, h);
+  return h;
 }
 
 export function buildLighting(scene) {
@@ -113,14 +138,16 @@ export function buildLighting(scene) {
   const sun = new THREE.DirectionalLight(0xfff4d8, 1.2);
   sun.position.set(120, 180, -80);
   sun.castShadow = true;
-  sun.shadow.mapSize.width  = 2048;
-  sun.shadow.mapSize.height = 2048;
-  sun.shadow.camera.near = 1;
-  sun.shadow.camera.far  = 800;
-  sun.shadow.camera.left   = -300;
-  sun.shadow.camera.right  =  300;
-  sun.shadow.camera.top    =  300;
-  sun.shadow.camera.bottom = -300;
+  // 1024² is sufficient for the visible play area and uses ¼ the GPU memory of 2048²
+  sun.shadow.mapSize.width  = 1024;
+  sun.shadow.mapSize.height = 1024;
+  sun.shadow.camera.near = 10;
+  sun.shadow.camera.far  = 500;
+  // Frustum covers ~160×160 units — enough for the immediate play area
+  sun.shadow.camera.left   = -80;
+  sun.shadow.camera.right  =  80;
+  sun.shadow.camera.top    =  80;
+  sun.shadow.camera.bottom = -80;
   scene.add(sun);
 
   // Hemisphere — sky blue top, warm ground bounce
@@ -132,7 +159,8 @@ export function buildLighting(scene) {
 
 export function buildSky(scene) {
   // Large sphere inverted as a sky dome
-  const geo = new THREE.SphereGeometry(900, 32, 16);
+  // 8×6 segments are visually identical to 32×16 for a smooth vertex-colour gradient
+  const geo = new THREE.SphereGeometry(900, 8, 6);
   geo.scale(-1, 1, 1); // invert normals
 
   // Vertical gradient via vertex colours

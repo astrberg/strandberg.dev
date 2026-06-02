@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { getHeightAt, WORLD_SIZE } from './world.js';
 import { loadGLTF } from './model-loader.js';
 
@@ -39,38 +40,36 @@ function placeEnvModel(key, scene, x, z, scale = 1, rotY = 0) {
   return model;
 }
 
-// ── Campus trees ─────────────────────────────────────────────────────────────────
-// Each tree = cone canopy + cylinder trunk. Billboard leaves for far trees.
+// ── Campus trees ───────────────────────────────────────────────────────────
+// Geometry is collected into arrays and merged via mergeGeometries() in buildForest().
+// This reduces ~1100 individual tree draw calls down to just 2.
 
-function makeTree(scene, x, z, scale = 1.0) {
+/**
+ * Pushes trunk and canopy geometries (world-space transformed) into the
+ * provided collector arrays instead of adding meshes directly to the scene.
+ */
+function collectTree(trunkGeos, canopyGeos, x, z, scale = 1.0) {
   const gy = getHeightAt(x, z);
 
-  const trunkMat = new THREE.MeshLambertMaterial({ color: 0x4a2e12 });
-  const trunkH   = (5 + Math.random() * 3) * scale;
+  const trunkH = (5 + Math.random() * 3) * scale;
   const trunkGeo = new THREE.CylinderGeometry(0.3 * scale, 0.5 * scale, trunkH, 7);
-  const trunk    = new THREE.Mesh(trunkGeo, trunkMat);
-  trunk.position.set(x, gy + trunkH / 2, z);
-  trunk.castShadow = true;
-  scene.add(trunk);
-
-  // Two stacked cones for richer silhouette
-  const leafColor = new THREE.Color().setHSL(0.28 + Math.random() * 0.04, 0.55 + Math.random() * 0.1, 0.22 + Math.random() * 0.06);
-  const leafMat   = new THREE.MeshLambertMaterial({ color: leafColor });
+  // Apply world-space transform directly into the geometry so all trunks can be merged
+  const trunkMatrix = new THREE.Matrix4().makeTranslation(x, gy + trunkH / 2, z);
+  trunkGeo.applyMatrix4(trunkMatrix);
+  trunkGeos.push(trunkGeo);
 
   const cone1H = (7 + Math.random() * 4) * scale;
   const cone1R = (2.5 + Math.random() * 1) * scale;
   const cone1Geo = new THREE.ConeGeometry(cone1R, cone1H, 7);
-  const cone1    = new THREE.Mesh(cone1Geo, leafMat);
-  cone1.position.set(x, gy + trunkH + cone1H * 0.45, z);
-  cone1.castShadow = true;
-  scene.add(cone1);
+  const cone1Matrix = new THREE.Matrix4().makeTranslation(x, gy + trunkH + cone1H * 0.45, z);
+  cone1Geo.applyMatrix4(cone1Matrix);
+  canopyGeos.push(cone1Geo);
 
   const cone2H = cone1H * 0.65;
   const cone2Geo = new THREE.ConeGeometry(cone1R * 0.7, cone2H, 7);
-  const cone2    = new THREE.Mesh(cone2Geo, leafMat);
-  cone2.position.set(x, gy + trunkH + cone1H * 0.85 + cone2H * 0.4, z);
-  cone2.castShadow = true;
-  scene.add(cone2);
+  const cone2Matrix = new THREE.Matrix4().makeTranslation(x, gy + trunkH + cone1H * 0.85 + cone2H * 0.4, z);
+  cone2Geo.applyMatrix4(cone2Matrix);
+  canopyGeos.push(cone2Geo);
 }
 
 // Deterministic pseudo-random from seed
@@ -95,20 +94,53 @@ export function buildForest(scene) {
   ];
 
   let seed = 0;
-  for (const z of zones) {
-    for (let i = 0; i < z.density; i++) {
-      const rx = z.xMin + seededRand(seed++) * (z.xMax - z.xMin);
-      const rz = z.zMin + seededRand(seed++) * (z.zMax - z.zMin);
-      const rs = (0.75 + seededRand(seed++) * 0.6) * z.scale;
 
-      if (hasModels) {
-        // Use model trees: alternate between tree_a and tree_b
+  if (hasModels) {
+    // glTF model path: place individually (models may have custom materials)
+    for (const z of zones) {
+      for (let i = 0; i < z.density; i++) {
+        const rx = z.xMin + seededRand(seed++) * (z.xMax - z.xMin);
+        const rz = z.zMin + seededRand(seed++) * (z.zMax - z.zMin);
+        const rs = (0.75 + seededRand(seed++) * 0.6) * z.scale;
         const key = treeKeys[i % treeKeys.length];
         const rotY = seededRand(seed + 100) * Math.PI * 2;
         placeEnvModel(key, scene, rx, rz, rs * 6, rotY);
-      } else {
-        makeTree(scene, rx, rz, rs);
       }
+    }
+  } else {
+    // Procedural path: collect all trunk and canopy geometries, merge into 2 draw calls
+    const trunkGeos  = [];
+    const canopyGeos = [];
+
+    for (const z of zones) {
+      for (let i = 0; i < z.density; i++) {
+        const rx = z.xMin + seededRand(seed++) * (z.xMax - z.xMin);
+        const rz = z.zMin + seededRand(seed++) * (z.zMax - z.zMin);
+        const rs = (0.75 + seededRand(seed++) * 0.6) * z.scale;
+        collectTree(trunkGeos, canopyGeos, rx, rz, rs);
+      }
+    }
+
+    if (trunkGeos.length > 0) {
+      const mergedTrunks = mergeGeometries(trunkGeos, false);
+      const trunkMesh = new THREE.Mesh(
+        mergedTrunks,
+        new THREE.MeshLambertMaterial({ color: 0x4a2e12 })
+      );
+      trunkMesh.castShadow = true;
+      scene.add(trunkMesh);
+      trunkGeos.forEach(g => g.dispose());
+    }
+
+    if (canopyGeos.length > 0) {
+      const mergedCanopy = mergeGeometries(canopyGeos, false);
+      const canopyMesh = new THREE.Mesh(
+        mergedCanopy,
+        new THREE.MeshLambertMaterial({ color: 0x2a5820 })
+      );
+      canopyMesh.castShadow = true;
+      scene.add(canopyMesh);
+      canopyGeos.forEach(g => g.dispose());
     }
   }
 
@@ -140,26 +172,34 @@ export function buildForest(scene) {
   }
 }
 
-// ── Crystal-clear Northshire stream ───────────────────────────────────────────
+// ── Crystal-clear Northshire stream ─────────────────────────────────────────────
 export function buildRiver(scene) {
-  // The Northshire stream runs roughly north-south through the valley centre
+  // The Northshire stream runs roughly north-south through the valley centre.
+  // All 20 segment boxes are merged into a single draw call.
   const waterMat = new THREE.MeshLambertMaterial({
     color: 0x1a5080,
     transparent: true,
     opacity: 0.78,
   });
 
-  const segments = 20;
+  const segments  = 20;
+  const riverGeos = [];
   for (let i = 0; i < segments; i++) {
-    const t  = i / segments;
-    const x  = 80 + Math.sin(t * Math.PI * 1.8) * 25; // meander
-    const z  = -200 + t * 400;
-    const gy = getHeightAt(x, z);
+    const t   = i / segments;
+    const x   = 80 + Math.sin(t * Math.PI * 1.8) * 25;
+    const z   = -200 + t * 400;
+    const gy  = getHeightAt(x, z);
     const geo = new THREE.BoxGeometry(10, 0.3, 22);
-    const mesh = new THREE.Mesh(geo, waterMat);
-    mesh.position.set(x, gy + 0.05, z);
+    geo.applyMatrix4(new THREE.Matrix4().makeTranslation(x, gy + 0.05, z));
+    riverGeos.push(geo);
+  }
+
+  if (riverGeos.length > 0) {
+    const merged = mergeGeometries(riverGeos, false);
+    const mesh   = new THREE.Mesh(merged, waterMat);
     mesh.receiveShadow = true;
     scene.add(mesh);
+    riverGeos.forEach(g => g.dispose());
   }
 
   // Small waterfall where river meets north slope

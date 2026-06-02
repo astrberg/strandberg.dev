@@ -251,6 +251,9 @@ export class ThirdPersonCamera {
     this._lastMX     = 0;
     this._lastMY     = 0;
 
+    // Reusable vector — avoids a heap allocation every frame
+    this._lookAt = new THREE.Vector3();
+
     this._bindEvents();
   }
 
@@ -304,8 +307,8 @@ export class ThirdPersonCamera {
     const terrainAtCam = getHeightAt(camX, camZ) + 0.5;
     this.camera.position.set(camX, Math.max(terrainAtCam, camY), camZ);
 
-    // Look at the player's shoulders
-    const lookAt = new THREE.Vector3(p.x, p.y + PLAYER_HEIGHT * 1.1, p.z);
-    this.camera.lookAt(lookAt);
+    // Look at the player's shoulders (reuse vector to avoid per-frame allocation)
+    this._lookAt.set(p.x, p.y + PLAYER_HEIGHT * 1.1, p.z);
+    this.camera.lookAt(this._lookAt);
   }
 }

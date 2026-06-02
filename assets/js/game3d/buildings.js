@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { getHeightAt } from './world.js';
 import { loadGLTF } from './model-loader.js';
 
-// ── SEB Headquarters and surrounding campus buildings ────────────────────────────
+// ── Headquarters and surrounding campus buildings ───────────────────────────────
 // Uses KayKit Medieval models (CC0) with procedural fallback.
 
 const STONE_COLOR   = 0x9a9080;
@@ -118,7 +118,7 @@ function towerAt(scene, x, z, radius = 3.5, height = 22) {
   scene.add(cap);
 }
 
-// ── SEB Headquarters (main structure) ────────────────────────────────────────
+// ── Headquarters (main structure) ───────────────────────────────────────────
 export function buildAbbey(scene) {
   const AX = -80, AZ = -20;
   const groundY = getHeightAt(AX, AZ);

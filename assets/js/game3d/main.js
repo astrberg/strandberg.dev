@@ -14,7 +14,8 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+// PCFShadowMap (4 samples) vs PCFSoftShadowMap (9 samples) — ~50% shadow cost saving
+renderer.shadowMap.type    = THREE.PCFShadowMap;
 renderer.toneMapping       = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 container.appendChild(renderer.domElement);
@@ -83,7 +84,7 @@ function tick() {
 
 // ── Zone detection ─────────────────────────────────────────────────────────────
 const ZONE_DEFS = [
-  { name: 'SEB Headquarters',    xMin: -120, xMax:  -30, zMin: -60, zMax:  30 },
+  { name: 'The Citadel',         xMin: -120, xMax:  -30, zMin: -60, zMax:  30 },
   { name: 'The Trading Floor',   xMin:  -30, xMax:   80, zMin: -80, zMax:  80 },
   { name: 'The Server Farm',     xMin:   -5, xMax:   75, zMin: -10, zMax:  90 },
   { name: 'The Data Vault',      xMin:   90, xMax:  160, zMin: -120, zMax: -40 },
@@ -116,14 +117,15 @@ function getZone(px, pz) {
 
   // Initial HUD state
   hud.updatePlayer(100, 100, 100, 100);
-  hud.showZone('SEB Headquarters', 'Solna Business Park');
-  hud.addChat('Welcome to SEB, engineer. Your desk awaits.', 'sys');
+  hud.showZone('The Citadel', 'Solna Business Park');
+  hud.addChat('Welcome, engineer. Your desk awaits.', 'sys');
   hud.addChat('WASD · Move  |  Right-click drag · Look  |  E · Talk  |  Scroll · Zoom', 'sys');
   hud.addChat('1-4 · Action bar  |  Shift · Run', 'sys');
 
-  let currentZone    = 'SEB Headquarters';
+  let currentZone    = 'The Citadel';
   let targetNPC      = null;
   let interactCooldown = 0;
+  let _frameTick     = 0; // used to throttle infrequent checks
 
   const clock = new THREE.Clock();
 
@@ -140,13 +142,15 @@ function getZone(px, pz) {
 
     for (const npc of npcs) npc.update(delta);
 
-    // Zone check
-    const px = player.position.x, pz = player.position.z;
-    const zone = getZone(px, pz);
-    if (zone !== currentZone) {
-      currentZone = zone;
-      hud.showZone(zone, 'Solna Business Park');
-      hud.addChat(`You have entered: ${zone}`, 'sys');
+    // Zone check — throttled to every 10 frames (zones are large, no need to check every tick)
+    if (++_frameTick % 10 === 0) {
+      const px = player.position.x, pz = player.position.z;
+      const zone = getZone(px, pz);
+      if (zone !== currentZone) {
+        currentZone = zone;
+        hud.showZone(zone, 'Solna Business Park');
+        hud.addChat(`You have entered: ${zone}`, 'sys');
+      }
     }
 
     // Nearest NPC interaction
