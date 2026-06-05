@@ -31,10 +31,19 @@ function placeEnvModel(key, scene, x, z, scale = 1, rotY = 0) {
   const gltf = envLoaded[key];
   if (!gltf) return null;
   const model = gltf.scene.clone(true);
+  
   model.scale.setScalar(scale);
   model.rotation.y = rotY;
+  
+  // Calculate bounding box in default position to find the correct bottom offset
+  model.position.set(0, 0, 0);
+  model.updateMatrixWorld(true);
+  const bbox = new THREE.Box3().setFromObject(model);
+  
   const gy = getHeightAt(x, z);
-  model.position.set(x, gy, z);
+  // Align the actual bottom of the mesh to the terrain
+  model.position.set(x, gy - bbox.min.y, z);
+  
   model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
   scene.add(model);
   return model;
@@ -81,70 +90,87 @@ function seededRand(seed) {
 export function buildForest(scene) {
   const treeKeys = ['tree_a', 'tree_b'];
   const clusterKeys = ['trees_large', 'trees_medium'];
+  const rockKeys = ['rock_a', 'rock_b', 'rock_c'];
   const hasModels = treeKeys.some(k => envLoaded[k]);
 
-  // Forest belts
-  const zones = [
-    { xMin: -250, xMax: 250, zMin: -240, zMax: -120, density: 110, scale: 1.1 },
-    { xMin: -250, xMax: 250, zMin:  120, zMax:  240, density: 90,  scale: 1.0 },
-    { xMin:  150, xMax:  250, zMin: -120, zMax:  120, density: 60,  scale: 1.0 },
-    { xMin: -200, xMax: -120, zMin: -80,  zMax:  80,  density: 50,  scale: 1.2 },
-    { xMin: -100, xMax:  150, zMin:  60,  zMax:  120, density: 30,  scale: 0.85 },
-    { xMin: -100, xMax:  150, zMin: -110, zMax:  -60, density: 30,  scale: 0.85 },
-  ];
-
   let seed = 0;
+  const treeInstances = [];
 
+  // 1. Boundary Forest (The mountain ring)
+  // Trees are densely packed only on the elevated hills to form an impenetrable wall.
+  for (let i = 0; i < 2500; i++) {
+    const rx = -250 + seededRand(seed++) * 500;
+    const rz = -250 + seededRand(seed++) * 500;
+    const gy = getHeightAt(rx, rz);
+    
+    if (gy > 12) {
+      treeInstances.push({ x: rx, z: rz, scale: 1.1 });
+    }
+  }
+
+  // 2. Specific clusters inside the valley
+  // Abbey courtyard trees
+  const abbeyTrees = [
+    [-60, -40], [-65, -5], [-95, -5], [-100, -30], [-70, -45],
+    [-50, -20], [-45, -35]
+  ];
+  for (const [tx, tz] of abbeyTrees) {
+    treeInstances.push({ x: tx, z: tz, scale: 0.9 });
+  }
+
+  // North-west wolf woods (behind the Abbey)
+  for (let i = 0; i < 20; i++) {
+    const rx = -180 + seededRand(seed++) * 80;
+    const rz = -140 + seededRand(seed++) * 80;
+    if (getHeightAt(rx, rz) < 15) {
+       treeInstances.push({ x: rx, z: rz, scale: 1.0 });
+    }
+  }
+
+  // River banks (winding through the center)
+  for (let i = 0; i < 30; i++) {
+    const rz = -180 + seededRand(seed++) * 360;
+    const side = seededRand(seed++) > 0.5 ? 1 : -1;
+    // Follow the river's sine wave formula
+    const rx = 80 + Math.sin((rz + 200) / 400 * Math.PI * 1.8) * 25 + side * (12 + seededRand(seed++) * 18);
+    if (getHeightAt(rx, rz) < 10) {
+      treeInstances.push({ x: rx, z: rz, scale: 1.0 });
+    }
+  }
+
+  // Render Trees
   if (hasModels) {
-    // glTF model path: place individually (models may have custom materials)
-    for (const z of zones) {
-      for (let i = 0; i < z.density; i++) {
-        const rx = z.xMin + seededRand(seed++) * (z.xMax - z.xMin);
-        const rz = z.zMin + seededRand(seed++) * (z.zMax - z.zMin);
-        const rs = (0.75 + seededRand(seed++) * 0.6) * z.scale;
-        const key = treeKeys[i % treeKeys.length];
-        const rotY = seededRand(seed + 100) * Math.PI * 2;
-        placeEnvModel(key, scene, rx, rz, rs * 6, rotY);
-      }
+    for (const t of treeInstances) {
+      const rs = (0.75 + seededRand(seed++) * 0.6) * t.scale;
+      const key = treeKeys[Math.floor(seededRand(seed++) * treeKeys.length)];
+      const rotY = seededRand(seed++) * Math.PI * 2;
+      placeEnvModel(key, scene, t.x, t.z, rs * 6, rotY);
     }
   } else {
-    // Procedural path: collect all trunk and canopy geometries, merge into 2 draw calls
-    const trunkGeos  = [];
+    // Procedural fallback
+    const trunkGeos = [];
     const canopyGeos = [];
-
-    for (const z of zones) {
-      for (let i = 0; i < z.density; i++) {
-        const rx = z.xMin + seededRand(seed++) * (z.xMax - z.xMin);
-        const rz = z.zMin + seededRand(seed++) * (z.zMax - z.zMin);
-        const rs = (0.75 + seededRand(seed++) * 0.6) * z.scale;
-        collectTree(trunkGeos, canopyGeos, rx, rz, rs);
-      }
+    for (const t of treeInstances) {
+      const rs = (0.75 + seededRand(seed++) * 0.6) * t.scale;
+      collectTree(trunkGeos, canopyGeos, t.x, t.z, rs);
     }
-
     if (trunkGeos.length > 0) {
       const mergedTrunks = mergeGeometries(trunkGeos, false);
-      const trunkMesh = new THREE.Mesh(
-        mergedTrunks,
-        new THREE.MeshLambertMaterial({ color: 0x4a2e12 })
-      );
+      const trunkMesh = new THREE.Mesh(mergedTrunks, new THREE.MeshLambertMaterial({ color: 0x4a2e12 }));
       trunkMesh.castShadow = true;
       scene.add(trunkMesh);
       trunkGeos.forEach(g => g.dispose());
     }
-
     if (canopyGeos.length > 0) {
       const mergedCanopy = mergeGeometries(canopyGeos, false);
-      const canopyMesh = new THREE.Mesh(
-        mergedCanopy,
-        new THREE.MeshLambertMaterial({ color: 0x2a5820 })
-      );
+      const canopyMesh = new THREE.Mesh(mergedCanopy, new THREE.MeshLambertMaterial({ color: 0x2a5820 }));
       canopyMesh.castShadow = true;
       scene.add(canopyMesh);
       canopyGeos.forEach(g => g.dispose());
     }
   }
 
-  // Add tree clusters at forest edges using the cluster models
+  // Render Tree Clusters at the very edges
   if (envLoaded['trees_large']) {
     const clusterPositions = [
       [-180, -180], [-120, -200], [180, -160], [200, 140],
@@ -156,18 +182,39 @@ export function buildForest(scene) {
     }
   }
 
-  // Add rocks scattered around
+  // Render Rocks
   if (envLoaded['rock_a']) {
-    const rockKeys = ['rock_a', 'rock_b', 'rock_c'];
     let rseed = 1000;
-    for (let i = 0; i < 30; i++) {
+    const rockInstances = [];
+    
+    // Rocks at the waterfall (North side of river)
+    rockInstances.push([74, -192]);
+    rockInstances.push([82, -196]);
+    rockInstances.push([79, -188]);
+
+    // Foothill slopes
+    for (let i = 0; i < 50; i++) {
       const rx = -200 + seededRand(rseed++) * 400;
       const rz = -200 + seededRand(rseed++) * 400;
       const gy = getHeightAt(rx, rz);
-      if (gy > 20) continue;
-      const key = rockKeys[i % rockKeys.length];
+      // Place rocks on slopes
+      if (gy > 5 && gy < 16) {
+        rockInstances.push([rx, rz]);
+      }
+    }
+
+    // Along the river
+    for (let i = 0; i < 20; i++) {
+      const rz = -160 + seededRand(rseed++) * 320;
+      const side = seededRand(rseed++) > 0.5 ? 1 : -1;
+      const rx = 80 + Math.sin((rz + 200) / 400 * Math.PI * 1.8) * 25 + side * (6 + seededRand(rseed++) * 4);
+      rockInstances.push([rx, rz]);
+    }
+
+    for (const [rx, rz] of rockInstances) {
+      const key = rockKeys[Math.floor(seededRand(rseed++) * rockKeys.length)];
       const rs = 3 + seededRand(rseed++) * 5;
-      placeEnvModel(key, scene, rx, rz, rs, seededRand(rseed) * Math.PI * 2);
+      placeEnvModel(key, scene, rx, rz, rs, seededRand(rseed++) * Math.PI * 2);
     }
   }
 }

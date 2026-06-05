@@ -42,10 +42,19 @@ function placeModel(key, scene, x, z, scale = 1, rotY = 0) {
   const gltf = loaded[key];
   if (!gltf) return null;
   const model = gltf.scene.clone(true);
+  
   model.scale.setScalar(scale);
   model.rotation.y = rotY;
+  
+  // Calculate bounding box in default position to find the correct bottom offset
+  model.position.set(0, 0, 0);
+  model.updateMatrixWorld(true);
+  const bbox = new THREE.Box3().setFromObject(model);
+  
   const gy = getHeightAt(x, z);
-  model.position.set(x, gy, z);
+  // Align the actual bottom of the mesh to the terrain
+  model.position.set(x, gy - bbox.min.y, z);
+  
   model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
   scene.add(model);
   return model;
@@ -118,208 +127,75 @@ function towerAt(scene, x, z, radius = 3.5, height = 22) {
   scene.add(cap);
 }
 
-// ── Headquarters (main structure) ───────────────────────────────────────────
+// ── Goldshire Abbey (Hybrid small layout) ───────────────────────────────
 export function buildAbbey(scene) {
-  const AX = -80, AZ = -20;
-  const groundY = getHeightAt(AX, AZ);
-
-  // Try placing glTF church model as the main abbey
-  const abbeyModel = placeModel('church', scene, AX, AZ, 18, 0);
-  if (abbeyModel) {
-    // Add castle for the fortified look
-    placeModel('castle', scene, AX - 25, AZ, 10, Math.PI / 2);
-    // Corner towers
-    placeModel('tower_a', scene, AX - 20, AZ - 22, 8, 0);
-    placeModel('tower_a', scene, AX - 20, AZ + 22, 8, 0);
-    placeModel('tower_b', scene, AX + 20, AZ, 8, 0);
-    // Courtyard walls using fence_stone
-    for (let i = 0; i < 6; i++) {
-      placeModel('fence_stone', scene, AX - 20 + i * 8, AZ - 28, 6, 0);
-      placeModel('fence_stone', scene, AX - 20 + i * 8, AZ + 28, 6, 0);
-    }
-    placeModel('fence_stone_gate', scene, AX + 16, AZ, 6, Math.PI / 2);
-    // Barrels near abbey
-    placeModel('barrel', scene, AX + 12, AZ - 8, 4, 0);
-    placeModel('barrel', scene, AX + 14, AZ - 6, 4, 0.5);
-    return;
+  const AX = 0, AZ = -50;
+  placeModel('church', scene, AX, AZ, 14, 0);
+  
+  // Stone wall enclosing the Abbey backyard
+  for (let i = 0; i < 5; i++) {
+    placeModel('fence_stone', scene, AX - 16 + i * 8, AZ - 20, 6, 0);
   }
-
-  // Procedural fallback
-
-  // Main nave — long hall east-west
-  makeBox(40, 16, 18, stoneMat(), scene, AX, groundY + 8, AZ);
-  // Roof
-  makePrism(20, 7, 40, scene, AX - 0.5, groundY + 16 + 0.5, AZ - 9, 0);
-
-  // North transept
-  makeBox(14, 14, 12, stoneMat(STONE_DARK), scene, AX, groundY + 7, AZ - 14);
-  makePrism(15, 5, 14, scene, AX - 7, groundY + 14 + 0.5, AZ - 7, Math.PI / 2);
-
-  // South transept
-  makeBox(14, 14, 12, stoneMat(STONE_DARK), scene, AX, groundY + 7, AZ + 14);
-  makePrism(15, 5, 14, scene, AX - 7, groundY + 14 + 0.5, AZ + 7, Math.PI / 2);
-
-  // Apse (east end, rounded)
-  const apseGeo = new THREE.CylinderGeometry(9, 9, 14, 8, 1, false, 0, Math.PI);
-  const apseMesh = new THREE.Mesh(apseGeo, stoneMat());
-  apseMesh.position.set(AX + 26, groundY + 7, AZ);
-  apseMesh.castShadow = apseMesh.receiveShadow = true;
-  scene.add(apseMesh);
-
-  // Central tower
-  towerAt(scene, AX, AZ, 4.5, 28);
-
-  // Corner towers
-  towerAt(scene, AX - 20, AZ - 9, 3, 20);
-  towerAt(scene, AX - 20, AZ + 9, 3, 20);
-
-  // Courtyard wall (cloister)
-  const wallMat = stoneMat(STONE_DARK);
-  const wallH = 5;
-  // North wall
-  makeBox(36, wallH, 1.5, wallMat, scene, AX - 2, groundY + wallH / 2, AZ - 24);
-  // South wall
-  makeBox(36, wallH, 1.5, wallMat, scene, AX - 2, groundY + wallH / 2, AZ + 24);
-  // West wall
-  makeBox(1.5, wallH, 48, wallMat, scene, AX - 20, groundY + wallH / 2, AZ);
-
-  // Gate archway (east entrance)
-  makeBox(1.5, wallH, 12, wallMat, scene, AX + 16, groundY + wallH / 2, AZ - 18);
-  makeBox(1.5, wallH, 12, wallMat, scene, AX + 16, groundY + wallH / 2, AZ + 18);
-  // Arch lintel
-  makeBox(1.5, 3, 12, stoneMat(), scene, AX + 16, groundY + wallH + 1.5, AZ);
+  placeModel('fence_stone', scene, AX - 20, AZ - 16, 6, Math.PI / 2);
+  placeModel('fence_stone', scene, AX + 20, AZ - 16, 6, Math.PI / 2);
 }
 
-// ── The Fika Lounge ────────────────────────────────────────────────────────────
+// ── The Inn & Blacksmith ────────────────────────────────────────────────────────
 export function buildInn(scene) {
-  const IX = 10, IZ = 40;
-  const groundY = getHeightAt(IX, IZ);
+  // Tavern (West of the road)
+  placeModel('tavern', scene, -25, 15, 10, Math.PI / 2);
+  
+  // Barrels stacked outside the tavern
+  placeModel('barrel', scene, -15, 8, 4, 0.2);
+  placeModel('barrel', scene, -13, 9, 4, -0.4);
+  placeModel('barrel', scene, -14, 6, 4, 1.1);
 
-  // Try glTF tavern model
-  const innModel = placeModel('tavern', scene, IX, IZ, 12, 0);
-  if (innModel) {
-    placeModel('barrel', scene, IX + 8, IZ - 4, 4, 0.3);
-    placeModel('barrel', scene, IX + 9, IZ - 2, 4, -0.2);
-    placeModel('barrel', scene, IX - 8, IZ + 3, 4, 1.0);
-    return;
+  // Blacksmith (East of the road)
+  if (loaded['blacksmith']) {
+    placeModel('blacksmith', scene, 25, 10, 8, -Math.PI / 2);
+  } else {
+    // fallback if no blacksmith
+    placeModel('castle', scene, 25, 10, 6, -Math.PI / 2);
   }
-
-  // Procedural fallback
-
-  // Main timber frame building
-  makeBox(18, 10, 12, new THREE.MeshLambertMaterial({ color: WOOD_COLOR }), scene, IX, groundY + 5, IZ);
-  // Stone ground floor
-  makeBox(18, 5, 12, stoneMat(), scene, IX, groundY + 2.5, IZ);
-  // Thatched roof
-  makePrism(14, 8, 20, scene, IX - 1.5, groundY + 10 + 0.5, IZ - 10, 0, THATCH_COLOR);
-
-  // Sign post
-  const postMat = new THREE.MeshLambertMaterial({ color: 0x5a3818 });
-  makeBox(0.3, 6, 0.3, postMat, scene, IX + 11, groundY + 3, IZ - 5);
-  makeBox(4, 0.3, 0.3, postMat, scene, IX + 9, groundY + 6.2, IZ - 5);
 }
 
-// ── DevOps Command Center ─────────────────────────────────────────────────────
+// ── Village Houses ─────────────────────────────────────────────────────────────
 export function buildBarracks(scene) {
-  // Try glTF barracks model
-  const barracksModel = placeModel('barracks', scene, 60, -60, 12, 0);
-  if (barracksModel) {
-    // Guard post buildings
-    placeModel('home_a', scene, 30, -30, 8, 0);
-    placeModel('home_a', scene, 30, 20, 8, Math.PI);
-    placeModel('tower_a', scene, 60, -50, 6, 0);
-    return;
-  }
-
-  // Procedural fallback
-  // Two guard posts flanking the abbey entrance road
-  const positions = [
-    [30, -30],
-    [30,  20],
-  ];
-  for (const [bx, bz] of positions) {
-    const gy = getHeightAt(bx, bz);
-    makeBox(10, 7, 8, stoneMat(STONE_DARK), scene, bx, gy + 3.5, bz);
-    makePrism(10, 4, 10, scene, bx - 1, gy + 7 + 0.5, bz - 5, 0, ROOF_COLOR);
-  }
-
-  // Main barracks building
-  const BX = 60, BZ = -60;
-  const gy = getHeightAt(BX, BZ);
-  makeBox(22, 8, 12, stoneMat(), scene, BX, gy + 4, BZ);
-  makePrism(14, 5, 24, scene, BX - 2, gy + 8 + 0.5, BZ - 12, 0, ROOF_COLOR);
-  towerAt(scene, BX - 8, BZ - 5, 2.5, 14);
+  // We repurpose this to build the small houses
+  placeModel('home_a', scene, 22, 45, 8, -Math.PI / 2 + 0.2);
+  placeModel('home_b', scene, -24, 55, 8, Math.PI / 2 - 0.1);
+  
+  // Wooden fences around the houses
+  placeModel('fence_wood', scene, 18, 55, 5, 0);
+  placeModel('fence_wood', scene, 26, 55, 5, 0);
 }
 
-// ── The Server Farm ──────────────────────────────────────────────────────────────
+// ── Village Props ──────────────────────────────────────────────────────────────
 export function buildVineyards(scene) {
-  // Try glTF fence models
-  if (loaded['fence_wood']) {
-    for (let row = 0; row < 6; row++) {
-      const fz = -10 + row * 14;
-      for (let p = 0; p < 8; p++) {
-        const px = p * 8;
-        placeModel('fence_wood', scene, px, fz, 5, 0);
-      }
-      // Vines — dark green rows
-      const vineMat = new THREE.MeshLambertMaterial({ color: 0x2a5820 });
-      for (let v = 0; v < 7; v++) {
-        const vx = v * 8 + 4;
-        const gy = getHeightAt(vx, fz);
-        const vineGeo = new THREE.BoxGeometry(3, 1.2, 6);
-        const vine = new THREE.Mesh(vineGeo, vineMat);
-        vine.position.set(vx, gy + 0.9, fz);
-        vine.castShadow = true;
-        scene.add(vine);
-      }
-    }
-    return;
-  }
-
-  // Procedural fallback
-  const fenceMat = new THREE.MeshLambertMaterial({ color: 0x6a4820 });
-  // Server racks on the gentle slopes east of HQ
-  for (let row = 0; row < 6; row++) {
-    const fz = -10 + row * 14;
-    const fx  = 0;
-    // Fence post row
-    for (let p = 0; p < 8; p++) {
-      const px = fx + p * 8;
-      const gy = getHeightAt(px, fz);
-      makeBox(0.4, 2.5, 0.4, fenceMat, scene, px, gy + 1.25, fz);
-      if (p < 7) {
-        makeBox(8, 0.3, 0.3, fenceMat, scene, px + 4, gy + 2.4, fz);
-      }
-    }
-    // Vines — dark green rows
-    const vineMat = new THREE.MeshLambertMaterial({ color: 0x2a5820 });
-    for (let v = 0; v < 7; v++) {
-      const vx = fx + v * 8 + 4;
-      const gy = getHeightAt(vx, fz);
-      const vineGeo = new THREE.BoxGeometry(3, 1.2, 6);
-      const vine = new THREE.Mesh(vineGeo, vineMat);
-      vine.position.set(vx, gy + 0.9, fz);
-      vine.castShadow = true;
-      scene.add(vine);
-    }
-  }
+  // Repurposed for general props and well
+  placeModel('well', scene, -8, -15, 5, 0);
+  
+  placeModel('barrel', scene, 18, 35, 4, 0);
 }
 
-// ── Stone road through the valley ─────────────────────────────────────────────
+// ── Stone road through the town ───────────────────────────────────────────────
 export function buildRoad(scene) {
   const roadMat = new THREE.MeshLambertMaterial({ color: 0x7a7060 });
 
-  // Main road: runs east from HQ gate (~-64,0) to east edge
-  const segments = 30;
-  const roadW = 7;
+  // Main road runs North-South
+  const segments = 25;
+  const roadW = 8;
   for (let i = 0; i < segments; i++) {
-    const x = -64 + i * 14;
-    const z = Math.sin(i * 0.3) * 8; // gentle curve
+    const x = Math.sin(i * 0.2) * 2; // Very slight curve
+    const z = -30 + i * 6;
     const gy = getHeightAt(x, z) + 0.05;
-    const geo = new THREE.BoxGeometry(14.5, 0.2, roadW);
+    
+    // Skip road mesh if it's perfectly under a large building to prevent z-fighting,
+    // but in this layout it's mostly open.
+    const geo = new THREE.BoxGeometry(roadW, 0.2, 6.2);
     const mesh = new THREE.Mesh(geo, roadMat);
     mesh.position.set(x, gy, z);
-    mesh.rotation.y = Math.atan2(Math.sin((i + 0.5) * 0.3) - Math.sin(i * 0.3), 14) * 0.3;
+    mesh.rotation.y = Math.cos(i * 0.2) * 0.05;
     mesh.receiveShadow = true;
     scene.add(mesh);
   }

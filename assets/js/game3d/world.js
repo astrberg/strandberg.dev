@@ -1,40 +1,25 @@
 import * as THREE from 'three';
 
-// ── Terrain heightmap for Northshire valley ───────────────────────────────────
-// World is 512×512 units. Heights are sampled from a hand-crafted function
-// that mimics the Northshire valley: flat central valley, hills on north/south
-// edges, gentle slopes.
+export const WORLD_SIZE = 256;
+export const TERRAIN_SEGS = 64;
 
-export const WORLD_SIZE = 512;
-export const TERRAIN_SEGS = 128;
-
-/** Northshire terrain height at normalized coords (u,v) in [0,1]. */
+/** Smaller, flat center town heightmap */
 export function terrainHeight(u, v) {
-  // Valley centre
-  const cx = 0.5, cz = 0.52;
+  const cx = 0.5, cz = 0.5;
   const dx = u - cx, dz = v - cz;
+  const dist = Math.sqrt(dx * dx + dz * dz);
+  
+  // Flat center for the town
+  let base = 0;
+  if (dist > 0.3) {
+    // Gentle hills at the edge of the small map
+    base = Math.pow((dist - 0.3) * 8, 2) * 15;
+  }
 
-  // Broad valley dish — deeper in centre
-  const valleyFloor = Math.pow(dx * 1.6, 2) + Math.pow(dz * 1.1, 2);
-
-  // Northern ridge (top of map)
-  const northRidge = Math.max(0, 1 - v * 5) * 28;
-
-  // Southern hills
-  const southHill = Math.max(0, (v - 0.75) * 3.5) * 22;
-
-  // Eastern hills
-  const eastHill = Math.max(0, (u - 0.80) * 5) * 18;
-
-  // Western abbey hillside (slight elevation)
-  const westAbbey = Math.max(0, (0.22 - u) * 3) * 12;
-
-  // Gentle noise-like bumps (deterministic)
-  const bump = Math.sin(u * 14) * Math.cos(v * 11) * 1.2 +
-               Math.sin(u * 27 + 1) * Math.cos(v * 19) * 0.5;
-
-  const base = valleyFloor * 55 + northRidge + southHill + eastHill + westAbbey + bump;
-  return Math.max(0, base);
+  // Very gentle noise
+  const bump = Math.sin(u * 20) * Math.cos(v * 20) * 0.5;
+  
+  return Math.max(0, base + bump);
 }
 
 export function buildTerrain(scene) {
@@ -196,5 +181,5 @@ export function buildSky(scene) {
 }
 
 export function buildFog(scene) {
-  scene.fog = new THREE.Fog(0xb8d8e8, 80, 520);
+  scene.fog = new THREE.Fog(0xb8d8e8, 40, 180);
 }
