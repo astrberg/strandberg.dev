@@ -27,7 +27,7 @@ title: World of Strandberg — Solna Campus
 
     <!-- Player unit frame (top-left) -->
     <div id="player-frame" class="unit-frame">
-      <div class="unit-portrait">⚔</div>
+      <div class="unit-portrait class-warrior" id="player-portrait">🛡️</div>
       <div class="unit-bars">
         <div class="bar-row">
           <div id="player-hp-bar" class="bar hp-bar"><div id="player-hp-fill" class="bar-fill"></div></div>
@@ -39,7 +39,7 @@ title: World of Strandberg — Solna Campus
         </div>
       </div>
       <span class="unit-name">Engineer</span>
-      <span class="unit-level">Lv 1</span>
+      <span class="unit-level" id="player-level">Lv 1</span>
     </div>
 
     <!-- Target frame (top-left, below player) -->
@@ -64,10 +64,16 @@ title: World of Strandberg — Solna Campus
     <!-- Chat / dialogue box (bottom-left) -->
     <div id="chat-box">
       <div id="chat-messages"></div>
+      <input type="text" id="chat-input" class="hidden" placeholder="Press Enter to send..." maxlength="80" autocomplete="off" />
     </div>
 
     <!-- Action bar (bottom-center) -->
     <div id="action-bar">
+      <!-- Experience Bar -->
+      <div id="xp-bar-container">
+        <div id="xp-bar-fill"></div>
+        <span id="xp-bar-text">XP: 0 / 400</span>
+      </div>
       <div class="action-bar-bg">
         <div class="slot-row" id="action-slots"></div>
       </div>
@@ -78,6 +84,25 @@ title: World of Strandberg — Solna Campus
 
     <!-- Controls hint -->
     <div id="controls-hint">WASD · Move &nbsp;|&nbsp; Mouse · Look &nbsp;|&nbsp; E · Talk &nbsp;|&nbsp; Scroll · Zoom</div>
+
+    <!-- Death Screen Overlay & Dialog -->
+    <div id="death-overlay" class="hidden">
+      <!-- Cinematic "YOU DIED" Banner -->
+      <div id="death-banner">
+        <div id="death-banner-title">YOU DIED</div>
+        <div id="death-banner-subtitle">Spirit severed. Release to return to Northshire Abbey.</div>
+      </div>
+
+      <!-- WoW-style release prompt -->
+      <div id="death-dialog">
+        <h2>Release Spirit?</h2>
+        <p>Release your spirit to return to the nearest graveyard (Northshire Abbey).</p>
+        <button id="btn-release">Release Spirit</button>
+      </div>
+    </div>
+
+    <!-- Container for floating projected speech bubbles -->
+    <div id="speech-bubbles-container"></div>
 
   </div><!-- #hud -->
 

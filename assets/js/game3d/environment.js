@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { getHeightAt, WORLD_SIZE } from './world.js';
 import { loadGLTF } from './model-loader.js';
+import { addCircleCollider } from './physics.js';
 
 // ── Model-based environment ──────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ export async function loadEnvironmentModels() {
   }));
 }
 
-function placeEnvModel(key, scene, x, z, scale = 1, rotY = 0) {
+function placeEnvModel(key, scene, x, z, scale = 1, rotY = 0, castShadow = true) {
   const gltf = envLoaded[key];
   if (!gltf) return null;
   const model = gltf.scene.clone(true);
@@ -44,7 +45,12 @@ function placeEnvModel(key, scene, x, z, scale = 1, rotY = 0) {
   // Align the actual bottom of the mesh to the terrain
   model.position.set(x, gy - bbox.min.y, z);
   
-  model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+  model.traverse(c => {
+    if (c.isMesh) {
+      c.castShadow = castShadow;
+      c.receiveShadow = castShadow;
+    }
+  });
   scene.add(model);
   return model;
 }
@@ -99,20 +105,27 @@ export function buildForest(scene) {
   // 1. Boundary Forest (The mountain ring)
   // Trees are densely packed only on the elevated hills to form an impenetrable wall.
   for (let i = 0; i < 2500; i++) {
-    const rx = -250 + seededRand(seed++) * 500;
-    const rz = -250 + seededRand(seed++) * 500;
+    const rx = -135 + seededRand(seed++) * 270;
+    const rz = -135 + seededRand(seed++) * 270;
     const gy = getHeightAt(rx, rz);
     
-    if (gy > 12) {
+    // Avoid spawning mountain trees inside or near Crystal Lake (70, 20)
+    const ldx = rx - 70;
+    const ldz = rz - 20;
+    const ldist = Math.sqrt(ldx * ldx + ldz * ldz);
+    
+    if (gy > 3.5 && ldist > 30) {
       treeInstances.push({ x: rx, z: rz, scale: 1.1 });
     }
   }
 
   // 2. Specific clusters inside the valley
-  // Abbey courtyard trees
+  // Abbey courtyard trees (aligned around AX = 0, AZ = -60)
   const abbeyTrees = [
-    [-60, -40], [-65, -5], [-95, -5], [-100, -30], [-70, -45],
-    [-50, -20], [-45, -35]
+    [-15, -45], [15, -45], // front left/right
+    [-18, -60], [18, -60], // side left/right
+    [-12, -75], [12, -75], // backyard left/right
+    [-10, -35], [10, -35]  // further front flanking the path
   ];
   for (const [tx, tz] of abbeyTrees) {
     treeInstances.push({ x: tx, z: tz, scale: 0.9 });
@@ -120,21 +133,23 @@ export function buildForest(scene) {
 
   // North-west wolf woods (behind the Abbey)
   for (let i = 0; i < 20; i++) {
-    const rx = -180 + seededRand(seed++) * 80;
-    const rz = -140 + seededRand(seed++) * 80;
+    const rx = -80 + seededRand(seed++) * 50;
+    const rz = -110 + seededRand(seed++) * 40;
     if (getHeightAt(rx, rz) < 15) {
        treeInstances.push({ x: rx, z: rz, scale: 1.0 });
     }
   }
 
-  // River banks (winding through the center)
-  for (let i = 0; i < 30; i++) {
-    const rz = -180 + seededRand(seed++) * 360;
-    const side = seededRand(seed++) > 0.5 ? 1 : -1;
-    // Follow the river's sine wave formula
-    const rx = 80 + Math.sin((rz + 200) / 400 * Math.PI * 1.8) * 25 + side * (12 + seededRand(seed++) * 18);
-    if (getHeightAt(rx, rz) < 10) {
-      treeInstances.push({ x: rx, z: rz, scale: 1.0 });
+  // Crystal Lake shore trees (just outside the water edge, avoiding roads)
+  for (let i = 0; i < 25; i++) {
+    const angle = seededRand(seed++) * Math.PI * 2;
+    const radius = 27 + seededRand(seed++) * 8; // 27 to 35 units from center
+    const tx = 70 + Math.cos(angle) * radius;
+    const tz = 20 + Math.sin(angle) * radius;
+    
+    // Avoid placing trees directly on the East-West road (z = 20) and outer map boundaries
+    if (Math.abs(tz - 20) > 6 && tx < 115) {
+      treeInstances.push({ x: tx, z: tz, scale: 1.0 });
     }
   }
 
@@ -144,7 +159,13 @@ export function buildForest(scene) {
       const rs = (0.75 + seededRand(seed++) * 0.6) * t.scale;
       const key = treeKeys[Math.floor(seededRand(seed++) * treeKeys.length)];
       const rotY = seededRand(seed++) * Math.PI * 2;
-      placeEnvModel(key, scene, t.x, t.z, rs * 6, rotY);
+      const isBoundary = getHeightAt(t.x, t.z) > 4.0;
+      placeEnvModel(key, scene, t.x, t.z, rs * 6, rotY, !isBoundary);
+
+      // Register collider for valley trees (where height <= 4.0)
+      if (getHeightAt(t.x, t.z) <= 4.0) {
+        addCircleCollider(t.x, t.z, 0.8 * rs);
+      }
     }
   } else {
     // Procedural fallback
@@ -153,6 +174,11 @@ export function buildForest(scene) {
     for (const t of treeInstances) {
       const rs = (0.75 + seededRand(seed++) * 0.6) * t.scale;
       collectTree(trunkGeos, canopyGeos, t.x, t.z, rs);
+
+      // Register collider for valley trees (where height <= 4.0)
+      if (getHeightAt(t.x, t.z) <= 4.0) {
+        addCircleCollider(t.x, t.z, 0.6 * rs);
+      }
     }
     if (trunkGeos.length > 0) {
       const mergedTrunks = mergeGeometries(trunkGeos, false);
@@ -170,15 +196,15 @@ export function buildForest(scene) {
     }
   }
 
-  // Render Tree Clusters at the very edges
+  // Render Tree Clusters at the very edges (scaled down by 2 for WORLD_SIZE = 256)
   if (envLoaded['trees_large']) {
     const clusterPositions = [
-      [-180, -180], [-120, -200], [180, -160], [200, 140],
-      [-160, 160], [100, 180], [-200, -40], [220, 0],
+      [-90, -90], [-60, -100], [90, -80], [100, 70],
+      [-80, 80], [50, 90], [-100, -20], [110, 0],
     ];
     for (const [cx, cz] of clusterPositions) {
       const key = clusterKeys[Math.abs(cx + cz) % clusterKeys.length];
-      placeEnvModel(key, scene, cx, cz, 8, seededRand(cx * 7 + cz) * Math.PI * 2);
+      placeEnvModel(key, scene, cx, cz, 8, seededRand(cx * 7 + cz) * Math.PI * 2, false);
     }
   }
 
@@ -187,15 +213,10 @@ export function buildForest(scene) {
     let rseed = 1000;
     const rockInstances = [];
     
-    // Rocks at the waterfall (North side of river)
-    rockInstances.push([74, -192]);
-    rockInstances.push([82, -196]);
-    rockInstances.push([79, -188]);
-
-    // Foothill slopes
+    // Foothill slopes (within map boundaries)
     for (let i = 0; i < 50; i++) {
-      const rx = -200 + seededRand(rseed++) * 400;
-      const rz = -200 + seededRand(rseed++) * 400;
+      const rx = -120 + seededRand(rseed++) * 240;
+      const rz = -120 + seededRand(rseed++) * 240;
       const gy = getHeightAt(rx, rz);
       // Place rocks on slopes
       if (gy > 5 && gy < 16) {
@@ -203,104 +224,58 @@ export function buildForest(scene) {
       }
     }
 
-    // Along the river
-    for (let i = 0; i < 20; i++) {
-      const rz = -160 + seededRand(rseed++) * 320;
-      const side = seededRand(rseed++) > 0.5 ? 1 : -1;
-      const rx = 80 + Math.sin((rz + 200) / 400 * Math.PI * 1.8) * 25 + side * (6 + seededRand(rseed++) * 4);
-      rockInstances.push([rx, rz]);
+    // Crystal Lake shore rocks
+    for (let i = 0; i < 15; i++) {
+      const angle = seededRand(rseed++) * Math.PI * 2;
+      const radius = 25 + seededRand(rseed++) * 4; // 25 to 29 units from center
+      const rx = 70 + Math.cos(angle) * radius;
+      const rz = 20 + Math.sin(angle) * radius;
+      if (Math.abs(rz - 20) > 6 && rx < 115) { // Avoid road and map edge
+        rockInstances.push([rx, rz]);
+      }
     }
 
     for (const [rx, rz] of rockInstances) {
       const key = rockKeys[Math.floor(seededRand(rseed++) * rockKeys.length)];
       const rs = 3 + seededRand(rseed++) * 5;
-      placeEnvModel(key, scene, rx, rz, rs, seededRand(rseed++) * Math.PI * 2);
+      const gy = getHeightAt(rx, rz);
+      const isBoundaryRock = gy > 5.0;
+      placeEnvModel(key, scene, rx, rz, rs, seededRand(rseed++) * Math.PI * 2, !isBoundaryRock);
     }
   }
 }
 
-// ── Crystal-clear Northshire stream ─────────────────────────────────────────────
+// ── Crystal-clear Crystal Lake ──────────────────────────────────────────────────
 export function buildRiver(scene) {
-  // The Northshire stream runs roughly north-south through the valley centre.
-  // All 20 segment boxes are merged into a single draw call.
   const waterMat = new THREE.MeshLambertMaterial({
     color: 0x1a5080,
     transparent: true,
     opacity: 0.78,
   });
 
-  const segments  = 20;
-  const riverGeos = [];
-  for (let i = 0; i < segments; i++) {
-    const t   = i / segments;
-    const x   = 80 + Math.sin(t * Math.PI * 1.8) * 25;
-    const z   = -200 + t * 400;
-    const gy  = getHeightAt(x, z);
-    const geo = new THREE.BoxGeometry(10, 0.3, 22);
-    geo.applyMatrix4(new THREE.Matrix4().makeTranslation(x, gy + 0.05, z));
-    riverGeos.push(geo);
-  }
+  // Flat oval/circular-like lake plane
+  const lakeGeo = new THREE.PlaneGeometry(55, 40);
+  lakeGeo.rotateX(-Math.PI / 2);
+  const lake = new THREE.Mesh(lakeGeo, waterMat);
+  // Centered at (70, 20), floating slightly below the basin depth floor (-4.5) but below the valley floor (0.0)
+  lake.position.set(70, -0.2, 20);
+  lake.receiveShadow = true;
+  scene.add(lake);
 
-  if (riverGeos.length > 0) {
-    const merged = mergeGeometries(riverGeos, false);
-    const mesh   = new THREE.Mesh(merged, waterMat);
-    mesh.receiveShadow = true;
-    scene.add(mesh);
-    riverGeos.forEach(g => g.dispose());
-  }
+  // Small wooden dock structure extending into the lake
+  const dockWoodMat = new THREE.MeshLambertMaterial({ color: 0x6a4a2a });
+  const dockGeo = new THREE.BoxGeometry(8, 0.3, 3);
+  const dock = new THREE.Mesh(dockGeo, dockWoodMat);
+  dock.position.set(46, 0.1, 20); // Extends from land (x <= 42) into the lake
+  dock.receiveShadow = true;
+  scene.add(dock);
 
-  // Small waterfall where river meets north slope
-  const wfMat = new THREE.MeshLambertMaterial({ color: 0x80b4d0, transparent: true, opacity: 0.7 });
-  const wfGeo = new THREE.BoxGeometry(8, 6, 3);
-  const wf    = new THREE.Mesh(wfGeo, wfMat);
-  wf.position.set(78, getHeightAt(78, -190) + 2, -195);
-  scene.add(wf);
-}
-
-// ── Ground detail (disabled) ─────────────────────────────────────────────────
-export function buildGroundDetail(scene) {}
-
-// ── Abbott's Well (landmark) ──────────────────────────────────────────────────
-export function buildWell(scene) {
-  const WX = -30, WZ = 5;
-  const gy = getHeightAt(WX, WZ);
-
-  if (envLoaded['well']) {
-    placeEnvModel('well', scene, WX, WZ, 5, 0);
-    return;
-  }
-
-  // Procedural fallback
-  const stoneMat = new THREE.MeshLambertMaterial({ color: 0x888070 });
-  const ringGeo = new THREE.CylinderGeometry(2, 2.2, 0.8, 12);
-  const ring    = new THREE.Mesh(ringGeo, stoneMat);
-  ring.position.set(WX, gy + 0.4, WZ);
-  ring.castShadow = true;
-  scene.add(ring);
-
-  const wallGeo = new THREE.CylinderGeometry(1.8, 1.8, 1.6, 12, 1, true);
-  const wall    = new THREE.Mesh(wallGeo, stoneMat);
-  wall.position.set(WX, gy + 1.2, WZ);
-  wall.castShadow = true;
-  scene.add(wall);
-
-  const roofMat = new THREE.MeshLambertMaterial({ color: 0x5a3810 });
-  const roofGeo = new THREE.ConeGeometry(2.6, 2, 4);
-  const roof    = new THREE.Mesh(roofGeo, roofMat);
-  roof.position.set(WX, gy + 2 + 1 + 0.5, WZ);
-  roof.rotation.y = Math.PI / 4;
-  roof.castShadow = true;
-  scene.add(roof);
-
-  const postMat = new THREE.MeshLambertMaterial({ color: 0x6a4020 });
-  for (let i = 0; i < 4; i++) {
-    const a   = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const px  = WX + Math.cos(a) * 1.9;
-    const pz  = WZ + Math.sin(a) * 1.9;
-    const pGeo = new THREE.CylinderGeometry(0.12, 0.12, 3, 5);
-    const p   = new THREE.Mesh(pGeo, postMat);
-    p.position.set(px, gy + 1.5, pz);
-    p.castShadow = true;
-    scene.add(p);
-  }
+  // Supporting posts for the dock
+  const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 2.5);
+  const post1 = new THREE.Mesh(postGeo, dockWoodMat);
+  post1.position.set(49, -1.0, 18.6);
+  const post2 = new THREE.Mesh(postGeo, dockWoodMat);
+  post2.position.set(49, -1.0, 21.4);
+  scene.add(post1);
+  scene.add(post2);
 }

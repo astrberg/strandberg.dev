@@ -1,97 +1,159 @@
 import * as THREE from 'three';
 import { getHeightAt } from './world.js';
 import { loadGLTF, findClip, cloneModel } from './model-loader.js';
+import { MAX_LEVEL } from './player.js';
+
 
 // ── Campus NPC definitions ───────────────────────────────────────────────────
 
 const NPC_DEFS = [
   {
     id: 'head_of_engineering',
-    name: 'Head of Engineering',
-    title: 'Cloud Platform Division',
+    name: 'Smith Argus',
+    title: 'Town Blacksmith',
     portrait: '🛡',
     level: 6,
-    pos: [-60, -5],
+    pos: [13, 6],
     color: 0x6080a0,
-    patrol: [[-60, -5], [-60, 10], [-45, 5]],
+    patrol: [[13, 6], [14, 11], [14, 2]],
     dialogue: [
-      "Welcome, engineer. I oversee the Cloud Platform Division. We're migrating our core banking infrastructure to GCP this quarter.",
-      "Our Python microservices handle millions of transactions daily. Latency is measured in milliseconds — every optimisation counts.",
-      "Nordic finance has a long legacy of trust. We will not let old systems slow our digital transformation.",
+      "Welcome to Goldshire, traveler! If your armor needs mending or your sword needs honing, you've come to the right place.",
+      "Stormwind keeps us busy with orders for the guard, but I always have time for a paying customer.",
+      "Watch out for the Kobolds in the mines to the south. They've been getting bolder lately.",
     ],
   },
   {
     id: 'the_barista',
-    name: 'The Barista',
-    title: 'Fika Lounge',
+    name: 'Innkeeper Farley',
+    title: 'Lion\'s Pride Inn',
     portrait: '☕',
     level: 40,
-    pos: [10, 36],
+    pos: [-13, 5],
     color: 0xb08040,
     dialogue: [
-      "Welcome to the Fika Lounge! Grab a seat — the oat milk is fresh and the kanelbullar just came out of the oven.",
-      "Engineers come through here all the time. Most are heading to the trading floor to debug latency issues.",
-      "You know what they say: every successful deployment begins with a good cup of coffee and a clear head.",
+      "Welcome to the Lion's Pride Inn! Grab a seat by the hearth — our dwarven ale is cold and the mutton is fresh.",
+      "Travelers from all over Azeroth rest their heads here. Just keep the brawling to a minimum.",
+      "If you're looking for work, Marshal Dughan out in the crossroads is looking for help dealing with the local pests.",
     ],
   },
   {
     id: 'the_scrum_master',
-    name: 'The Scrum Master',
-    title: 'Agile Coach',
+    name: 'Agile Coach',
+    title: 'Town Hall',
     portrait: '📋',
     level: 20,
-    pos: [-75, -30],
+    pos: [13, 40],
     color: 0xd0d0ff,
-    patrol: [[-75, -30], [-65, -30], [-65, -20], [-75, -20]],
+    patrol: [[13, 40], [13, 35], [13, 45]],
     dialogue: [
-      "The Sprint watches over all who dwell in this codebase. May it guide your velocity, developer.",
-      "These are troubled times. Technical debt grows bolder, and legacy bugs push ever further into production.",
-      "I facilitate the retro for those lost to merge conflicts. The standup bell rings for them at nine.",
+      "The Sprint watches over all who dwell in Elwynn. May it guide your velocity, developer.",
+      "These are troubled times. Technical debt grows bolder, and kobolds push ever further into the server farm.",
+      "I facilitate the standup for those lost to merge conflicts. The standup bell rings for them at nine.",
     ],
   },
   {
     id: 'legacy_bug',
-    name: 'Legacy Bug',
+    name: 'Fargodeep Kobold',
     title: 'Hostile',
     portrait: '🐛',
     level: 1,
-    pos: [120, -80],
+    pos: [0, 85],
     color: 0xa06040,
     hostile: true,
-    patrol: [[120, -80], [130, -70], [125, -90]],
+    patrol: [[0, 85], [-5, 90], [5, 80]],
     dialogue: [
       "You no take my stack trace!!",
       "Bug no want fix! Bug just want to live in production!",
-      "*segfaults and lurks deeper into the legacy codebase*",
+      "*segfaults and scurries back into the legacy codebase*",
     ],
   },
   {
+    id: 'legacy_bug_1',
+    name: 'Fargodeep Kobold',
+    title: 'Hostile',
+    portrait: '🐛',
+    level: 1,
+    pos: [-25, 80],
+    color: 0xa06040,
+    hostile: true,
+    patrol: [[-25, 80], [-30, 85], [-20, 75]],
+    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+  },
+  {
+    id: 'legacy_bug_2',
+    name: 'Fargodeep Kobold',
+    title: 'Hostile',
+    portrait: '🐛',
+    level: 2,
+    pos: [25, 80],
+    color: 0xa06040,
+    hostile: true,
+    patrol: [[25, 80], [20, 85], [30, 75]],
+    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+  },
+  {
+    id: 'legacy_bug_3',
+    name: 'Fargodeep Kobold',
+    title: 'Hostile',
+    portrait: '🐛',
+    level: 2,
+    pos: [-50, 75],
+    color: 0xa06040,
+    hostile: true,
+    patrol: [[-50, 75], [-55, 80], [-45, 70]],
+    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+  },
+  {
+    id: 'legacy_bug_4',
+    name: 'Fargodeep Kobold',
+    title: 'Hostile',
+    portrait: '🐛',
+    level: 3,
+    pos: [50, 75],
+    color: 0xa06040,
+    hostile: true,
+    patrol: [[50, 75], [45, 80], [55, 70]],
+    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+  },
+  {
+    id: 'legacy_bug_5',
+    name: 'Fargodeep Kobold',
+    title: 'Hostile',
+    portrait: '🐛',
+    level: 3,
+    pos: [0, 90],
+    color: 0xa06040,
+    hostile: true,
+    patrol: [[0, 90], [-5, 95], [5, 85]],
+    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+  },
+  {
     id: 'devops_lead',
-    name: 'DevOps Lead',
-    title: 'Infrastructure Team',
+    name: 'Marshal Dughan',
+    title: 'Goldshire Marshal',
     portrait: '⚙',
     level: 5,
-    pos: [28, -28],
+    pos: [0, 20],
     color: 0x7090b0,
-    patrol: [[28, -28], [40, -28], [40, -14], [28, -14]],
+    patrol: [[0, 20], [0, 12], [0, 28]],
     dialogue: [
-      "Keep your pipelines green out there. Flaky tests have been spotted near the server farm.",
-      "The Head of Engineering has us running double deployments. Can't be too careful with compliance.",
+      "Keep your pipelines green out there, traveler. Flaky bugs have been spotted near the southern woods.",
+      "The King has us running double patrols. Can't be too careful with compliance in Elwynn.",
       "I heard the audit team to the east might make a push this quarter. Keep your Terraform state clean.",
     ],
   },
   {
     id: 'data_analyst',
-    name: 'The Data Analyst',
-    title: 'Business Intelligence',
+    name: 'William Pestle',
+    title: 'Alchemist',
     portrait: '📊',
     level: 10,
-    pos: [-10, 50],
+    pos: [-13, 40],
     color: 0x60a060,
     dialogue: [
-      "Pssst. You there — I'm not just a dashboard builder. I have access to every KPI in the organisation.",
-      "The quarterly numbers are more volatile than the engineers give them credit for.",
-      "If you come across any anomalous transaction patterns, report it immediately. And tell no one I showed you that data.",
+      "Pssst. You there — I'm not just an alchemist. I have access to every KPI in the Kingdom.",
+      "The quarterly performance numbers are more volatile than the engineers give them credit for.",
+      "If you come across any anomalous transaction patterns in the database, report it to me immediately.",
     ],
   },
 ];
@@ -132,6 +194,16 @@ export class NPC3D {
 
     this._buildLabel();
 
+    // Combat state
+    this.maxHp = (def.level || 1) * 25;
+    this.hp = this.maxHp;
+    this.isDead = false;
+    this.combatTarget = null;
+    this.attackCooldown = 0;
+    this.spawnPos = [def.pos[0], def.pos[1]];
+    this.respawnTimer = 0;
+    this._animations = null;
+
     const [wx, wz] = def.pos;
     const gy = getHeightAt(wx, wz);
     this.group.position.set(wx, gy, wz);
@@ -140,6 +212,74 @@ export class NPC3D {
       const py = getHeightAt(px, pz);
       return new THREE.Vector3(px, py, pz);
     });
+  }
+
+  takeDamage(amount, player, hud) {
+    if (this.isDead) return;
+    this.hp = Math.max(0, this.hp - amount);
+    hud.updateTargetHp(this.hp, this.maxHp);
+
+    if (this.hp <= 0) {
+      this.die(player, hud);
+    } else {
+      if (!this.combatTarget) {
+        this.combatTarget = player;
+        hud.addChat(`${this.name} enters combat with you!`, 'err');
+      }
+    }
+  }
+
+  die(player, hud) {
+    this.isDead = true;
+    this.hp = 0;
+    this.combatTarget = null;
+    this.respawnTimer = 8.0; // Respawns in 8s
+
+    // Rotate model to fall over on its side
+    this.group.rotation.z = Math.PI / 2;
+    this.group.position.y = getHeightAt(this.group.position.x, this.group.position.z) + 0.2;
+
+    if (player && player.level < MAX_LEVEL) {
+      hud.addChat(`${this.name} dies! You earn 100 XP.`, 'sys');
+      if (player.gainXp) {
+        player.gainXp(100, hud);
+      }
+    } else {
+      hud.addChat(`${this.name} dies!`, 'sys');
+    }
+    hud.setTarget(null);
+  }
+
+  respawn() {
+    this.isDead = false;
+    this.hp = this.maxHp;
+    this.group.rotation.z = 0;
+    const [sx, sz] = this.spawnPos;
+    const sy = getHeightAt(sx, sz);
+    this.group.position.set(sx, sy, sz);
+    this.patrolIndex = 0;
+    this.patrolWait = 0;
+    this.combatTarget = null;
+  }
+
+  _playOnce(...clipNames) {
+    if (!this._mixer || !this._animations) return;
+    for (const name of clipNames) {
+      const clip = this._animations.find(c => c.name === name);
+      if (clip) {
+        const action = this._mixer.clipAction(clip);
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+        action.reset().play();
+        const dur = clip.duration * 1000;
+        setTimeout(() => action.stop(), dur + 50);
+        return;
+      }
+    }
+  }
+
+  _playAttackAnim() {
+    this._playOnce('1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Chop', '1H_Melee_Attack_Slice_Horizontal');
   }
 
   _buildMesh() {
@@ -207,7 +347,8 @@ export class NPC3D {
 
   /** Async: try to load a glTF model. Falls back to box mesh on failure. */
   async initModel(modelIndex) {
-    const url  = NPC_MODELS[this.def.id];
+    const lookupId = this.def.id.startsWith('legacy_bug') ? 'legacy_bug' : this.def.id;
+    const url  = NPC_MODELS[lookupId];
     if (!url) return;
     const gltf = await loadGLTF(url);
     if (!gltf) return;
@@ -228,6 +369,7 @@ export class NPC3D {
 
     if (gltf.animations && gltf.animations.length > 0) {
       this._mixer = new THREE.AnimationMixer(model);
+      this._animations = gltf.animations;
 
       const idleClip = findClip(gltf.animations, 'Idle', 'Unarmed_Idle', 'idle', 'Stand', 'TPose');
       const walkClip = findClip(gltf.animations, 'Walking_A', 'Walking_B', 'Walk', 'Running_A');
@@ -244,9 +386,77 @@ export class NPC3D {
     }
   }
 
-  update(delta) {
+  update(delta, player, hud) {
+    if (this._mixer) this._mixer.update(delta);
+
+    if (this.isDead) {
+      this.respawnTimer -= delta;
+      if (this.respawnTimer <= 0) {
+        this.respawn();
+      }
+      return;
+    }
+
+    if (this.attackCooldown > 0) {
+      this.attackCooldown -= delta;
+    }
+
+    // Combat logic
+    if (this.combatTarget && !this.isDead && player && hud) {
+      const current = this.group.position;
+      const pPos = this.combatTarget.position;
+      const dx = pPos.x - current.x;
+      const dz = pPos.z - current.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      // If player is dead or too far, drop combat
+      if (this.combatTarget.hp <= 0 || dist > 35) {
+        this.combatTarget = null;
+        hud.addChat(`${this.name} drops combat.`, 'sys');
+        return;
+      }
+
+      if (dist > 2.0) {
+        // Run towards player
+        const step = this.patrolSpeed * 1.5;
+        current.x += (dx / dist) * step;
+        current.z += (dz / dist) * step;
+        current.y = getHeightAt(current.x, current.z);
+        this.group.rotation.y = Math.atan2(dx, dz);
+
+        // Walking animation
+        if (this._mixer && !this._isMoving) {
+          this._isMoving = true;
+          if (this._idleAction && this._walkAction) {
+            this._idleAction.setEffectiveWeight(0);
+            this._walkAction.setEffectiveWeight(1);
+          }
+        }
+      } else {
+        // Attack range
+        if (this._mixer && this._isMoving) {
+          this._isMoving = false;
+          if (this._idleAction && this._walkAction) {
+            this._idleAction.setEffectiveWeight(1);
+            this._walkAction.setEffectiveWeight(0);
+          }
+        }
+
+        // Face player
+        this.group.rotation.y = Math.atan2(dx, dz);
+
+        if (this.attackCooldown <= 0) {
+          const dmg = (this.def.level || 1) * 3 + Math.floor(Math.random() * 3);
+          this.combatTarget.takeDamage(dmg, this, hud);
+          this.attackCooldown = 1.6; // Attack speed
+          this._playAttackAnim();
+        }
+      }
+      return;
+    }
+
+    // Normal patrol logic
     if (this._patrolPoints.length < 2) {
-      if (this._mixer) this._mixer.update(delta);
       return;
     }
     if (this.patrolWait > 0) {
@@ -260,7 +470,6 @@ export class NPC3D {
             this._walkAction.setEffectiveWeight(0);
           }
         }
-        this._mixer.update(delta);
       }
       return;
     }
@@ -274,7 +483,6 @@ export class NPC3D {
     if (dist < 0.25) {
       this.patrolIndex = (this.patrolIndex + 1) % this._patrolPoints.length;
       this.patrolWait  = 1.5 + Math.random() * 2;
-      if (this._mixer) this._mixer.update(delta);
       return;
     }
 
@@ -292,8 +500,6 @@ export class NPC3D {
     current.z += (dz / dist) * step;
     current.y  = getHeightAt(current.x, current.z);
     this.group.rotation.y = Math.atan2(dx, dz);
-
-    if (this._mixer) this._mixer.update(delta);
   }
 
   getNextDialogue() {

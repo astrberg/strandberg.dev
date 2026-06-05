@@ -5,6 +5,7 @@ export const input = {
   right:    false,
   running:  false,
   interact: false,
+  jump:     false,
   cameraYaw: 0, // set externally from camera
   actionSlot: 0, // 1-9 when pressed, 0 = none
 };
@@ -12,12 +13,28 @@ export const input = {
 let interactConsumed = false;
 
 window.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    input.forward  = false;
+    input.back     = false;
+    input.left     = false;
+    input.right    = false;
+    input.running  = false;
+    input.jump     = false;
+    return;
+  }
+
+  // Ignore controls if user is typing in the chat input field
+  if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+    return;
+  }
+
   switch (e.key.toLowerCase()) {
     case 'w': case 'arrowup':    input.forward  = true; break;
     case 's': case 'arrowdown':  input.back     = true; break;
     case 'a': case 'arrowleft':  input.left     = true; break;
     case 'd': case 'arrowright': input.right    = true; break;
     case 'shift':                input.running  = true; break;
+    case ' ':                    input.jump     = true; break;
     case 'e':
       if (!interactConsumed) { input.interact = true; interactConsumed = true; }
       break;
@@ -39,6 +56,7 @@ window.addEventListener('keyup', e => {
     case 'a': case 'arrowleft':  input.left    = false; break;
     case 'd': case 'arrowright': input.right   = false; break;
     case 'shift':                input.running = false; break;
+    case ' ':                    input.jump    = false; break;
     case 'e':
       input.interact   = false;
       interactConsumed = false;

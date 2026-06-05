@@ -20,20 +20,6 @@ export function loadGLTF(url) {
   });
 }
 
-export async function loadBatch(urls, onProgress) {
-  const total = urls.length;
-  let loaded = 0;
-  const results = {};
-  const promises = urls.map(url =>
-    loadGLTF(url).then(gltf => {
-      loaded++;
-      if (onProgress) onProgress(loaded / total);
-      results[url] = gltf;
-    })
-  );
-  await Promise.all(promises);
-  return results;
-}
 
 export function cloneModel(gltf) {
   if (!gltf) return null;

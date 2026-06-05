@@ -1,10 +1,13 @@
 import * as THREE from 'three';
 import { getHeightAt } from './world.js';
 import { loadGLTF, findClip, cloneModel } from './model-loader.js';
+import { resolveCollisions } from './physics.js';
 
 export const PLAYER_HEIGHT = 1.75;
 export const PLAYER_SPEED  = 8.0;
 export const PLAYER_RUN_MULT = 1.85;
+export const MAX_LEVEL = 10;
+
 
 export class Player3D {
   constructor(scene) {
@@ -12,6 +15,14 @@ export class Player3D {
     this.maxHp = 100;
     this.mp    = 100;
     this.maxMp = 100;
+    this.level = 1;
+    this.xp    = 0;
+    this.maxXp = 400;
+
+    // Exploration and interaction tracking
+    this.discoveredZones = [];
+    this.talkedNpcs      = [];
+    this._activeEffects  = [];
 
     this._mixer      = null;
     this._animations = null;
@@ -25,8 +36,8 @@ export class Player3D {
 
     // The player "body" group — camera is attached above this
     this.group = new THREE.Group();
-    this.group.position.set(-50, 0, 0);
-    this.group.position.y = getHeightAt(-50, 0);
+    this.group.position.set(0, 0, -45);
+    this.group.position.y = getHeightAt(0, -45);
     scene.add(this.group);
 
     // Build fallback box mesh inside _boxGroup, add _boxGroup to main group
@@ -36,6 +47,10 @@ export class Player3D {
     // Camera pivot
     this.cameraPivot = new THREE.Object3D();
     this.group.add(this.cameraPivot);
+
+    // Jump physics state
+    this.velocityY = 0;
+    this.isGrounded = true;
   }
 
   _buildMesh() {
@@ -119,18 +134,53 @@ export class Player3D {
   // ── Action abilities ────────────────────────────────────────────────────────
   _torchLight = null;
 
-  performAction(action, hud) {
+  performAction(action, hud, targetNPC) {
+    const levelMult = 1 + (this.level - 1) * 0.15; // +15% power per level
     switch (action.id) {
-      case 'deploy':
+      case 'deploy': {
         this._playOnce('1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Chop');
-        hud.addChat('You push to production!', 'sys');
+        if (targetNPC && targetNPC.hostile && !targetNPC.isDead) {
+          const dist = this.group.position.distanceTo(targetNPC.group.position);
+          if (dist <= 6.0) {
+            // Deduct energy
+            this.mp = Math.max(0, this.mp - 25);
+            
+            const baseDmg = 8 + Math.floor(Math.random() * 6);
+            const dmg = Math.floor(baseDmg * levelMult);
+            hud.addChat(`Deploy Code hits ${targetNPC.name} for ${dmg} damage!`, 'sys');
+            targetNPC.takeDamage(dmg, this, hud);
+          } else {
+            hud.addChat('Target is too far away!', 'err');
+          }
+        } else {
+          hud.addChat('You push code, but have no hostile target to deploy to!', 'sys');
+        }
         break;
-      case 'review':
+      }
+      case 'review': {
         this._playOnce('Blocking', 'Block');
-        hud.addChat('You review a pull request.', 'sys');
+        if (targetNPC && targetNPC.hostile && !targetNPC.isDead) {
+          const dist = this.group.position.distanceTo(targetNPC.group.position);
+          if (dist <= 6.0) {
+            // Deduct energy
+            this.mp = Math.max(0, this.mp - 40);
+            
+            const baseDmg = 22 + Math.floor(Math.random() * 10);
+            const dmg = Math.floor(baseDmg * levelMult);
+            hud.addChat(`Code Review hits ${targetNPC.name} for ${dmg} damage!`, 'sys');
+            targetNPC.takeDamage(dmg, this, hud);
+          } else {
+            hud.addChat('Target is too far away!', 'err');
+          }
+        } else {
+          hud.addChat('You review a pull request, but have no hostile target!', 'sys');
+        }
         break;
+      }
       case 'coffee': {
-        const heal = 15 + Math.floor(Math.random() * 10);
+        // Free: based on cooldown only
+        const baseHeal = 15 + Math.floor(Math.random() * 10);
+        const heal = Math.floor(baseHeal * levelMult);
         this.hp = Math.min(this.maxHp, this.hp + heal);
         hud.updatePlayer(this.hp, this.maxHp, this.mp, this.maxMp);
         hud.addChat(`Coffee break restores ${heal} energy. (${this.hp}/${this.maxHp})`, 'sys');
@@ -142,6 +192,273 @@ export class Player3D {
         hud.addChat(this._torchLight ? 'Monitor on.' : 'Monitor off.', 'sys');
         break;
     }
+  }
+
+  takeDamage(amount, attacker, hud) {
+    if (this.hp <= 0) return;
+    this.hp = Math.max(0, this.hp - amount);
+    hud.updatePlayer(this.hp, this.maxHp, this.mp, this.maxMp);
+
+    hud.addChat(`${attacker.name} hits you for ${amount} damage!`, 'err');
+
+    if (this.hp <= 0) {
+      this.die(hud);
+    }
+  }
+
+  die(hud) {
+    hud.addChat('You have died!', 'err');
+    
+    if (this._mixer) {
+      if (this._idleAction) this._idleAction.setEffectiveWeight(0);
+      if (this._walkAction) this._walkAction.setEffectiveWeight(0);
+      if (this._runAction)  this._runAction.setEffectiveWeight(0);
+    }
+
+    hud.showDeathScreen(() => {
+      hud.hideDeathScreen();
+      
+      this.group.position.set(0, getHeightAt(0, -45), -45);
+      this.hp = this.maxHp;
+      this.mp = this.maxMp;
+      this.velocityY = 0;
+      this.isGrounded = true;
+      hud.updatePlayer(this.hp, this.maxHp, this.mp, this.maxMp);
+      
+      hud.addChat('You have resurrected at Northshire Abbey.', 'sys');
+    });
+  }
+
+  gainXp(amount, hud) {
+    if (this.hp <= 0) return; // Can't gain XP while dead!
+    if (this.level >= MAX_LEVEL) return;
+    this.xp += amount;
+    
+    // Check level up
+    while (this.xp >= this.maxXp) {
+      this.xp -= this.maxXp;
+      this.level++;
+      
+      if (this.level >= MAX_LEVEL) {
+        this.level = MAX_LEVEL;
+        this.xp = 0;
+        this.maxXp = 0;
+      } else {
+        this.maxXp = this.level * 400; // Level 1 is 400, Level 2 is 800, etc.
+      }
+      
+      // Flash / heal player on level up!
+      this.hp = this.maxHp;
+      this.mp = this.maxMp;
+      
+      // Update UI elements
+      hud.updatePlayer(this.hp, this.maxHp, this.mp, this.maxMp);
+      hud.updatePlayerLevel(this.level);
+      
+      hud.addChat(`Congratulations! You have reached Level ${this.level}!`, 'sys');
+      if (this.level === MAX_LEVEL) {
+        hud.addChat('You have reached the maximum level!', 'sys');
+      }
+      
+      // Flash golden burst on portrait!
+      hud.flashLevelUp();
+      
+      // Trigger the 3D level-up golden light & synthesized chime sound effect!
+      this.triggerLevelUpEffect();
+      
+      if (this.level === MAX_LEVEL) {
+        break;
+      }
+    }
+    
+    // Update the XP bar in the HUD
+    hud.updateXpBar(this.xp, this.maxXp);
+    
+    // Save progress to cookie (GDPR/CCPA compliant client-side functional cookie)
+    this.saveProgress();
+  }
+
+  loadProgress(hud) {
+    const name = "game_progress=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const ca = decodedCookie.split(';');
+    let cookieVal = "";
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i].trim();
+      if (c.indexOf(name) === 0) {
+        cookieVal = c.substring(name.length, c.length);
+        break;
+      }
+    }
+    
+    if (cookieVal) {
+      try {
+        const data = JSON.parse(cookieVal);
+        if (data.level) this.level = parseInt(data.level) || 1;
+        if (this.level >= MAX_LEVEL) {
+          this.level = MAX_LEVEL;
+          this.xp = 0;
+          this.maxXp = 0;
+        } else {
+          if (data.xp !== undefined) this.xp = parseInt(data.xp) || 0;
+          this.maxXp = this.level * 400;
+        }
+        if (data.zones) this.discoveredZones = data.zones;
+        if (data.npcs) this.talkedNpcs = data.npcs;
+      } catch (e) {
+        console.warn("Failed to parse game progress cookie:", e);
+      }
+    }
+    
+    // Sync HUD displays
+    hud.updatePlayerLevel(this.level);
+    hud.updateXpBar(this.xp, this.maxXp);
+  }
+
+  saveProgress() {
+    // Purely client-side functional cookie. Non-identifying, not sent to any tracking servers.
+    // GDPR/CCPA compliant as it is strictly necessary to save client-side game state progress.
+    document.cookie = `game_progress=${JSON.stringify({
+      level: this.level,
+      xp: this.xp,
+      zones: this.discoveredZones,
+      npcs: this.talkedNpcs
+    })}; path=/; max-age=31536000; SameSite=Strict`;
+  }
+
+  discoverZone(zone, hud) {
+    if (this.discoveredZones.includes(zone)) return;
+    this.discoveredZones.push(zone);
+    if (this.level < MAX_LEVEL) {
+      hud.addChat(`Discovered: ${zone} (+50 XP)`, 'sys');
+      this.gainXp(50, hud);
+    } else {
+      hud.addChat(`Discovered: ${zone}`, 'sys');
+    }
+  }
+
+  talkToNpc(npcId, npcName, hud) {
+    if (this.talkedNpcs.includes(npcId)) return;
+    this.talkedNpcs.push(npcId);
+    if (this.level < MAX_LEVEL) {
+      hud.addChat(`Met ${npcName} (+35 XP)`, 'sys');
+      this.gainXp(35, hud);
+    } else {
+      hud.addChat(`Met ${npcName}`, 'sys');
+    }
+  }
+
+  triggerLevelUpEffect() {
+    // 1. Play the synthesized WoW-style "Ding!" chime sound effect (Web Audio API)
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = audioCtx.currentTime;
+
+      // Primary Chime component (Bright triangle wave)
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(587.33, now); // D5
+      osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.12); // A5 chime swell
+      osc1.frequency.exponentialRampToValueAtTime(1174.66, now + 0.35); // D6 octave ring
+      
+      gain1.gain.setValueAtTime(0.35, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2); // ring out over 1.2s
+
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 1.3);
+
+      // Major Chord Harmony Swell component (Warm sine wave swell)
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(293.66, now); // D4 root chord
+      osc2.frequency.setValueAtTime(370.01, now + 0.12); // F#4 major chord
+      osc2.frequency.exponentialRampToValueAtTime(440.00, now + 0.5); // A4 fifth
+      
+      gain2.gain.setValueAtTime(0.01, now);
+      gain2.gain.linearRampToValueAtTime(0.2, now + 0.25); // swell in
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.8); // fade out warm choir
+
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now);
+      osc2.stop(now + 1.9);
+    } catch (e) {
+      console.warn("Web Audio API Level-Up chime play deferred/failed:", e);
+    }
+
+    // 2. 3D Visual Effects Group
+    const effectGroup = new THREE.Group();
+    this.group.add(effectGroup);
+
+    // Cylinder Beam
+    const beamGeo = new THREE.CylinderGeometry(1.2, 1.2, 15, 12, 1, true);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: 0xffd700,
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const beam = new THREE.Mesh(beamGeo, beamMat);
+    beam.position.set(0, 7.5, 0);
+    effectGroup.add(beam);
+
+    // Expanding Ground Ring
+    const ringGeo = new THREE.RingGeometry(0.1, 1.8, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xff8800,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotateX(-Math.PI / 2);
+    ring.position.set(0, 0.05, 0);
+    effectGroup.add(ring);
+
+    // Rising Sparks (Particles)
+    const sparkGeo = new THREE.SphereGeometry(0.12, 4, 4);
+    const sparks = [];
+    const numSparks = 25;
+    for (let i = 0; i < numSparks; i++) {
+      const sparkMat = new THREE.MeshBasicMaterial({
+        color: 0xffe680,
+        transparent: true,
+        opacity: 0.95,
+        blending: THREE.AdditiveBlending
+      });
+      const spark = new THREE.Mesh(sparkGeo, sparkMat);
+      
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 1.0;
+      spark.position.set(Math.cos(angle) * radius, 0.1 + Math.random() * 0.5, Math.sin(angle) * radius);
+      
+      spark.userData = {
+        speedY: 2.5 + Math.random() * 3.5,
+        driftX: (Math.random() - 0.5) * 0.6,
+        driftZ: (Math.random() - 0.5) * 0.6,
+        age: 0,
+        life: 0.8 + Math.random() * 0.8
+      };
+      effectGroup.add(spark);
+      sparks.push(spark);
+    }
+
+    this._activeEffects.push({
+      group: effectGroup,
+      beam,
+      ring,
+      sparks,
+      elapsed: 0,
+      duration: 1.5
+    });
   }
 
   _playOnce(...clipNames) {
@@ -172,7 +489,22 @@ export class Player3D {
     }
   }
 
-  update(inputState, delta) {
+  update(inputState, delta, hud) {
+    if (this.hp <= 0) {
+      if (this._mixer) this._mixer.update(delta);
+      return;
+    }
+    
+    // Regenerate energy: 20 Energy per second
+    if (this.mp < this.maxMp) {
+      this.mp = Math.min(this.maxMp, this.mp + 20.0 * delta);
+      if (hud) {
+        hud.updatePlayer(this.hp, this.maxHp, this.mp, this.maxMp);
+      }
+    }
+    
+    const prevX = this.group.position.x;
+    const prevZ = this.group.position.z;
     const { forward, back, left, right, running } = inputState;
     const speed = PLAYER_SPEED * (running ? PLAYER_RUN_MULT : 1.0) * delta;
 
@@ -200,13 +532,52 @@ export class Player3D {
       this.group.position.x = Math.max(-h, Math.min(h, this.group.position.x));
       this.group.position.z = Math.max(-h, Math.min(h, this.group.position.z));
 
+      // Resolve static building collisions
+      resolveCollisions(this.group.position, 0.6);
+
+      // Block player from climbing steep mountain tree walls (height > 4.0)
+      if (getHeightAt(this.group.position.x, this.group.position.z) > 4.0) {
+        this.group.position.x = prevX;
+        this.group.position.z = prevZ;
+      }
+
       // Face direction of travel
       this.group.rotation.y = Math.atan2(mx, mz);
     }
 
-    // Terrain follow
-    const targetY = getHeightAt(this.group.position.x, this.group.position.z);
-    this.group.position.y += (targetY - this.group.position.y) * 0.25;
+    // Terrain follow and jump/fall physics
+    const terrainY = getHeightAt(this.group.position.x, this.group.position.z);
+
+    // Jump trigger
+    if (inputState.jump && this.isGrounded) {
+      this.velocityY = 8.5; // WoW-style jump velocity
+      this.isGrounded = false;
+      this._playOnce('Jump_Start', 'Jump');
+    }
+
+    if (!this.isGrounded) {
+      // Apply gravity
+      this.velocityY -= 22.0 * delta;
+      this.group.position.y += this.velocityY * delta;
+
+      // Landing check
+      if (this.group.position.y <= terrainY) {
+        this.group.position.y = terrainY;
+        this.velocityY = 0;
+        this.isGrounded = true;
+      }
+    } else {
+      // Enter falling state if walking off a ledge (sudden drop > 1.2 units)
+      const drop = this.group.position.y - terrainY;
+      if (drop > 1.2) {
+        this.isGrounded = false;
+        this.velocityY = 0;
+      } else {
+        // Snap directly to the terrain height
+        this.group.position.y = terrainY;
+        this.velocityY = 0;
+      }
+    }
 
     // Animation blending
     if (this._mixer) {
@@ -227,6 +598,51 @@ export class Player3D {
         }
       }
       this._mixer.update(delta);
+    }
+
+    // Update active level-up effects
+    for (let i = this._activeEffects.length - 1; i >= 0; i--) {
+      const fx = this._activeEffects[i];
+      fx.elapsed += delta;
+
+      if (fx.elapsed >= fx.duration) {
+        this.group.remove(fx.group);
+        fx.beam.geometry.dispose();
+        fx.beam.material.dispose();
+        fx.ring.geometry.dispose();
+        fx.ring.material.dispose();
+        fx.sparks.forEach(s => {
+          s.geometry.dispose();
+          s.material.dispose();
+        });
+        this._activeEffects.splice(i, 1);
+        continue;
+      }
+
+      const progress = fx.elapsed / fx.duration;
+
+      // Animate the beam: rotate and fade
+      fx.beam.rotation.y += delta * 4.0;
+      fx.beam.material.opacity = Math.max(0, 0.8 * (1.0 - progress));
+
+      // Animate ground ring: expand and fade
+      const ringScale = 1.0 + progress * 4.0;
+      fx.ring.scale.set(ringScale, ringScale, 1.0);
+      fx.ring.material.opacity = Math.max(0, 0.9 * (1.0 - progress * 1.2));
+
+      // Animate rising sparks
+      fx.sparks.forEach(s => {
+        s.userData.age += delta;
+        const sparkLife = s.userData.age / s.userData.life;
+        if (sparkLife < 1.0) {
+          s.position.y += s.userData.speedY * delta;
+          s.position.x += s.userData.driftX * delta;
+          s.position.z += s.userData.driftZ * delta;
+          s.material.opacity = Math.max(0, 0.95 * (1.0 - sparkLife));
+        } else {
+          s.material.opacity = 0;
+        }
+      });
     }
   }
 }

@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { buildTerrain, buildLighting, buildSky, buildFog, getHeightAt } from './world.js';
 import { buildAbbey, buildInn, buildBarracks, buildVineyards, buildRoad, loadBuildingModels } from './buildings.js';
-import { buildForest, buildRiver, buildGroundDetail, buildWell, loadEnvironmentModels } from './environment.js';
+import { buildForest, buildRiver, loadEnvironmentModels } from './environment.js';
 import { createNPCs } from './npcs.js';
 import { Player3D, ThirdPersonCamera } from './player.js';
 import { HUD3D } from './hud.js';
 import { input } from './input.js';
+import { clearColliders } from './physics.js';
 
 // ── Renderer setup ────────────────────────────────────────────────────────────
 const container = document.getElementById('renderer-container');
@@ -35,6 +36,7 @@ const hud = new HUD3D();
 
 // ── Async world build with loading progress ───────────────────────────────────
 async function buildWorld() {
+  clearColliders();
   hud.setLoadingProgress(5);
 
   buildFog(scene);
@@ -63,7 +65,6 @@ async function buildWorld() {
   hud.setLoadingProgress(65);
 
   await tick();
-  buildWell(scene);
   buildRiver(scene);
   hud.setLoadingProgress(75);
 
@@ -72,7 +73,6 @@ async function buildWorld() {
   hud.setLoadingProgress(88);
 
   await tick();
-  buildGroundDetail(scene);
   hud.setLoadingProgress(95);
 
   await tick();
@@ -84,18 +84,17 @@ function tick() {
 
 // ── Zone detection ─────────────────────────────────────────────────────────────
 const ZONE_DEFS = [
-  { name: 'The Citadel',         xMin: -120, xMax:  -30, zMin: -60, zMax:  30 },
-  { name: 'The Trading Floor',   xMin:  -30, xMax:   80, zMin: -80, zMax:  80 },
-  { name: 'The Server Farm',     xMin:   -5, xMax:   75, zMin: -10, zMax:  90 },
-  { name: 'The Data Vault',      xMin:   90, xMax:  160, zMin: -120, zMax: -40 },
-  { name: 'The Coffee Stream',   xMin:   60, xMax:  110, zMin: -80, zMax:  80 },
+  { name: 'Northshire Valley',   xMin: -120, xMax:  120, zMin: -120, zMax: -30 },
+  { name: 'Goldshire Crossroads', xMin:  -35, xMax:   35, zMin:  -30, zMax:  60 },
+  { name: 'Crystal Lake',        xMin:   35, xMax:  120, zMin:  -30, zMax:  60 },
+  { name: 'Fargodeep Mine',      xMin: -120, xMax:  120, zMin:   60, zMax: 120 },
 ];
 
 function getZone(px, pz) {
   for (const z of ZONE_DEFS) {
     if (px >= z.xMin && px <= z.xMax && pz >= z.zMin && pz <= z.zMax) return z.name;
   }
-  return 'Solna Business Park';
+  return 'Elwynn Forest';
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -107,6 +106,12 @@ function getZone(px, pz) {
   const camCtrl = new ThirdPersonCamera(camera, player);
   const npcs    = createNPCs(scene);
 
+  // Link player reference to HUD for speech bubbles
+  hud.player = player;
+  
+  // Load saved level & experience progress
+  player.loadProgress(hud);
+
   hud.setLoadingProgress(100);
   await tick();
   hud.hideLoading();
@@ -117,15 +122,72 @@ function getZone(px, pz) {
 
   // Initial HUD state
   hud.updatePlayer(100, 100, 100, 100);
-  hud.showZone('The Citadel', 'Solna Business Park');
-  hud.addChat('Welcome, engineer. Your desk awaits.', 'sys');
+  const initialZone = getZone(player.position.x, player.position.z);
+  hud.showZone(initialZone, 'Elwynn Forest');
+  player.discoverZone(initialZone, hud);
+  hud.addChat('Welcome, traveler. Your journey begins.', 'sys');
   hud.addChat('WASD · Move  |  Right-click drag · Look  |  E · Talk  |  Scroll · Zoom', 'sys');
   hud.addChat('1-4 · Action bar  |  Shift · Run', 'sys');
 
-  let currentZone    = 'The Citadel';
+  let currentZone    = initialZone;
   let targetNPC      = null;
   let interactCooldown = 0;
   let _frameTick     = 0; // used to throttle infrequent checks
+
+  // Mouse click targeting using Raycaster
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  window.addEventListener('mousedown', e => {
+    if (e.button !== 0) return; // Only left click
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const npcObjects = npcs.map(n => n.group);
+    const intersects = raycaster.intersectObjects(npcObjects, true);
+
+    if (intersects.length > 0) {
+      const hitObj = intersects[0].object;
+      let curr = hitObj;
+      while (curr) {
+        const found = npcs.find(n => n.group === curr);
+        if (found) {
+          targetNPC = found;
+          hud.setTarget(found);
+          return;
+        }
+        curr = curr.parent;
+      }
+    }
+  });
+
+  // Tab (cycle target) and Escape (clear target) key handlers
+  let tabIndex = 0;
+  window.addEventListener('keydown', e => {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const aliveNpcs = npcs.filter(n => !n.isDead);
+      if (aliveNpcs.length === 0) return;
+
+      // Sort by distance to player
+      aliveNpcs.sort((a, b) => a.distanceTo(player.position) - b.distanceTo(player.position));
+
+      tabIndex = (tabIndex + 1) % aliveNpcs.length;
+      targetNPC = aliveNpcs[tabIndex];
+      hud.setTarget(targetNPC);
+    }
+
+    if (e.key === 'Escape') {
+      targetNPC = null;
+      hud.setTarget(null);
+    }
+  });
 
   const clock = new THREE.Clock();
 
@@ -137,10 +199,10 @@ function getZone(px, pz) {
 
     input.cameraYaw = camCtrl.getYaw();
 
-    player.update(input, delta);
+    player.update(input, delta, hud);
     camCtrl.update();
 
-    for (const npc of npcs) npc.update(delta);
+    for (const npc of npcs) npc.update(delta, player, hud);
 
     // Zone check — throttled to every 10 frames (zones are large, no need to check every tick)
     if (++_frameTick % 10 === 0) {
@@ -148,8 +210,9 @@ function getZone(px, pz) {
       const zone = getZone(px, pz);
       if (zone !== currentZone) {
         currentZone = zone;
-        hud.showZone(zone, 'Solna Business Park');
+        hud.showZone(zone, 'Elwynn Forest');
         hud.addChat(`You have entered: ${zone}`, 'sys');
+        player.discoverZone(zone, hud);
       }
     }
 
@@ -162,23 +225,48 @@ function getZone(px, pz) {
       if (d < nearestDist) { nearestDist = d; nearest = npc; }
     }
 
-    const canInteract = nearestDist < INTERACT_RANGE && !hud.isDialogueOpen;
-    hud.showInteractPrompt(canInteract);
-    if (canInteract && nearest !== targetNPC) {
-      targetNPC = nearest;
-      hud.setTarget(nearest);
-    } else if (!canInteract && targetNPC) {
-      targetNPC = null;
-      hud.setTarget(null);
+    // Target leash check: clear target if it dies or is too far away (> 35 units)
+    if (targetNPC) {
+      const dist = targetNPC.distanceTo(player.position);
+      if (dist > 35 || targetNPC.isDead) {
+        targetNPC = null;
+        hud.setTarget(null);
+      }
     }
+
+    const canInteract = nearestDist < INTERACT_RANGE && !hud.isDialogueOpen && nearest && !nearest.isDead;
+    hud.showInteractPrompt(canInteract, nearest && nearest.hostile);
 
     if (interactCooldown > 0) interactCooldown -= delta;
     if (input.interact && canInteract && interactCooldown <= 0) {
       input.interact = false;
       interactCooldown = 0.4;
+
+      // Auto-target on interact
+      if (targetNPC !== nearest) {
+        targetNPC = nearest;
+        hud.setTarget(nearest);
+      }
+
       const line = nearest.getNextDialogue();
-      hud.showDialogue(nearest.name, line);
-      hud.addChat(`${nearest.name}: "${line}"`);
+
+      if (nearest.hostile) {
+        // Melee attack trigger on E
+        player._playOnce('1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Chop');
+        const dmg = 5 + Math.floor(Math.random() * 5);
+        hud.addChat(`You hit ${nearest.name} for ${dmg} damage!`, 'sys');
+        nearest.takeDamage(dmg, player, hud);
+        
+        // Still trigger dialogue shout
+        hud.addChat(`${nearest.name}: "${line}"`);
+        hud.spawnSpeechBubble(nearest.def.id, nearest.group, line);
+      } else {
+        // Friendly merchant dialogue UI
+        player.talkToNpc(nearest.def.id, nearest.name, hud);
+        hud.showDialogue(nearest.name, line);
+        hud.addChat(`${nearest.name}: "${line}"`);
+        hud.spawnSpeechBubble(nearest.def.id, nearest.group, line);
+      }
     }
 
     if (input.interact && hud.isDialogueOpen) {
@@ -189,12 +277,13 @@ function getZone(px, pz) {
     // Action bar
     if (input.actionSlot > 0) {
       const action = hud.triggerAction(input.actionSlot - 1);
-      if (action) player.performAction(action, hud);
+      if (action) player.performAction(action, hud, targetNPC);
       input.actionSlot = 0;
     }
     hud.updateCooldowns(delta);
 
     hud.drawMinimap(player.position, npcs);
+    hud.updateSpeechBubbles(camera);
 
     renderer.render(scene, camera);
   }

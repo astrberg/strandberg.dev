@@ -16,10 +16,20 @@ export function terrainHeight(u, v) {
     base = Math.pow((dist - 0.3) * 8, 2) * 15;
   }
 
+  // Carve out Crystal Lake basin centered at (70, 20)
+  // Normalized: u_lake = (70 + 128) / 256 = 0.773, v_lake = (20 + 128) / 256 = 0.578
+  const ldx = u - 0.773;
+  const ldz = v - 0.578;
+  const ldist = Math.sqrt(ldx * ldx + ldz * ldz);
+  if (ldist < 0.15) {
+    const depth = (1.0 - ldist / 0.15) * 4.5;
+    base -= depth;
+  }
+
   // Very gentle noise
   const bump = Math.sin(u * 20) * Math.cos(v * 20) * 0.5;
   
-  return Math.max(0, base + bump);
+  return Math.max(-5.0, base + bump);
 }
 
 export function buildTerrain(scene) {

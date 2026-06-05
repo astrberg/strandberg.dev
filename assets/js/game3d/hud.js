@@ -1,8 +1,13 @@
+import * as THREE from 'three';
+
 // ── WoW-style HUD manager ─────────────────────────────────────────────────────
 // All manipulation is via the DOM elements defined in world/index.html.
 
 export class HUD3D {
   constructor() {
+    this._bubblesContainer = document.getElementById('speech-bubbles-container');
+    this._activeBubbles    = [];
+
     // Zone
     this._zoneEl    = document.getElementById('zone-name');
     this._zoneText  = document.getElementById('zone-text');
@@ -15,6 +20,14 @@ export class HUD3D {
     this._mpFill  = document.getElementById('player-mp-fill');
     this._mpText  = document.getElementById('player-mp-text');
 
+    // Player portrait and level
+    this._playerPortrait = document.getElementById('player-portrait');
+    this._playerLevel    = document.getElementById('player-level');
+
+    // XP bar
+    this._xpFill = document.getElementById('xp-bar-fill');
+    this._xpText = document.getElementById('xp-bar-text');
+
     // Target frame
     this._targetFrame   = document.getElementById('target-frame');
     this._targetName    = document.getElementById('target-name');
@@ -25,6 +38,7 @@ export class HUD3D {
 
     // Chat
     this._chatEl  = document.getElementById('chat-messages');
+    this._chatInput = document.getElementById('chat-input');
 
     // Interact prompt
     this._interactEl = document.getElementById('interact-prompt');
@@ -49,7 +63,36 @@ export class HUD3D {
 
     this._buildActionBar();
     this._zoneTimer = 0;
+
+    // Death screen
+    this._deathOverlay = document.getElementById('death-overlay');
+    this._btnRelease   = document.getElementById('btn-release');
+    this._onReleaseCallback = null;
+    this._btnRelease.addEventListener('click', () => {
+      if (this._onReleaseCallback) this._onReleaseCallback();
+    });
+
     this._buildMinimapBackground();
+
+    // Set up Enter key listener to toggle chat input
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        if (this.isChatInputActive) {
+          const text = this._chatInput.value.trim();
+          if (text) {
+            this.addChat(`You: ${text}`);
+            if (this.player && this.player.group) {
+              this.spawnSpeechBubble('player', this.player.group, text);
+            }
+            this._processChatCommand(text);
+          }
+          this.hideChatInput();
+        } else {
+          this.showChatInput();
+          e.preventDefault();
+        }
+      }
+    });
   }
 
   // ── Loading bar ────────────────────────────────────────────────────────────
@@ -90,15 +133,87 @@ export class HUD3D {
     this._targetFrame.classList.remove('hidden');
     this._targetName.textContent    = npcDef.def.name;
     this._targetLevel.textContent   = `Lv ${npcDef.def.level}`;
-    this._targetPortrait.textContent = npcDef.def.portrait;
-    this._targetHpFill.style.width  = '100%';
-    this._targetHpText.textContent  = `${npcDef.def.level * 25} / ${npcDef.def.level * 25}`;
+    
+    // Dynamically assign target class color and avatar icon
+    const classMap = {
+      'head_of_engineering': { icon: '⚔️', bg: 'class-warrior' },     // Smith Argus
+      'the_barista':         { icon: '🍻', bg: 'class-barbarian' },   // Innkeeper Farley
+      'the_scrum_master':    { icon: '🔮', bg: 'class-mage' },        // Agile Coach
+      'legacy_bug':          { icon: '🐛', bg: 'class-hostile' },     // Kobold
+      'devops_lead':         { icon: '🛡️', bg: 'class-warrior' },     // Marshal Dughan
+      'data_analyst':        { icon: '🧪', bg: 'class-rogue' },       // William Pestle
+    };
+    const lookupId = npcDef.def.id.startsWith('legacy_bug') ? 'legacy_bug' : npcDef.def.id;
+    const cfg = classMap[lookupId] || { icon: '?', bg: 'class-generic' };
+    this._targetPortrait.textContent = cfg.icon;
+    this._targetPortrait.className = `unit-portrait ${cfg.bg}`;
+
+    this.updateTargetHp(npcDef.hp, npcDef.maxHp);
+  }
+
+  updateTargetHp(hp, maxHp) {
+    const pct = Math.max(0, hp / maxHp) * 100;
+    this._targetHpFill.style.width = pct + '%';
+    this._targetHpText.textContent = `${Math.max(0, hp)} / ${maxHp}`;
   }
 
   // ── Interact prompt ───────────────────────────────────────────────────────
-  showInteractPrompt(show) {
-    if (show)  this._interactEl.classList.remove('hidden');
-    else       this._interactEl.classList.add('hidden');
+  showInteractPrompt(show, isHostile = false) {
+    if (show) {
+      this._interactEl.innerHTML = isHostile ? 'Press <kbd>E</kbd> to attack' : 'Press <kbd>E</kbd> to speak';
+      this._interactEl.classList.remove('hidden');
+    } else {
+      this._interactEl.classList.add('hidden');
+    }
+  }
+
+  // ── Death Screen ──────────────────────────────────────────────────────────
+  showDeathScreen(onRelease) {
+    this._deathOverlay.classList.remove('hidden');
+    document.body.classList.add('dead');
+    this._onReleaseCallback = onRelease;
+  }
+
+  hideDeathScreen() {
+    this._deathOverlay.classList.add('hidden');
+    document.body.classList.remove('dead');
+    this._onReleaseCallback = null;
+  }
+
+  // ── Experience and Level updates ───────────────────────────────────────────
+  updatePlayerLevel(level) {
+    if (this._playerLevel) {
+      const pFrame = document.getElementById('player-frame');
+      if (level >= 10) {
+        this._playerLevel.textContent = `Lv ${level} (Elite)`;
+        if (pFrame) pFrame.classList.add('elite-frame');
+      } else {
+        this._playerLevel.textContent = `Lv ${level}`;
+        if (pFrame) pFrame.classList.remove('elite-frame');
+      }
+    }
+  }
+
+  updateXpBar(xp, maxXp) {
+    if (this._xpFill && this._xpText) {
+      if (maxXp === 0) {
+        this._xpFill.style.width = '100%';
+        this._xpText.textContent = 'Level Cap Reached';
+      } else {
+        const pct = Math.min(100, Math.max(0, (xp / maxXp) * 100));
+        this._xpFill.style.width = pct + '%';
+        this._xpText.textContent = `XP: ${xp} / ${maxXp}`;
+      }
+    }
+  }
+
+  flashLevelUp() {
+    if (this._playerPortrait) {
+      this._playerPortrait.classList.add('level-up-flash');
+      setTimeout(() => {
+        this._playerPortrait.classList.remove('level-up-flash');
+      }, 1500);
+    }
   }
 
   // ── Dialogue popup ─────────────────────────────────────────────────────────
@@ -116,19 +231,128 @@ export class HUD3D {
     return !this._dialogueBox.classList.contains('hidden');
   }
 
-  // ── Chat messages ─────────────────────────────────────────────────────────
   addChat(text, type = 'normal') {
     // Cap chat history at 30 messages to prevent unbounded DOM growth
     const existing = this._chatEl.querySelectorAll('.chat-line');
     if (existing.length >= 30) existing[0].remove();
 
     const el = document.createElement('div');
-    el.className = 'chat-line' + (type === 'sys' ? ' sys' : '');
+    el.className = 'chat-line ' + type;
     el.textContent = text;
     this._chatEl.appendChild(el);
     this._chatEl.scrollTop = this._chatEl.scrollHeight;
     // Auto-remove after 12s
     setTimeout(() => el.remove(), 12000);
+  }
+
+  showChatInput() {
+    this._chatInput.classList.remove('hidden');
+    this._chatInput.focus();
+  }
+
+  hideChatInput() {
+    this._chatInput.value = '';
+    this._chatInput.classList.add('hidden');
+    this._chatInput.blur();
+  }
+
+  get isChatInputActive() {
+    return this._chatInput && !this._chatInput.classList.contains('hidden');
+  }
+
+  _processChatCommand(text) {
+    const lower = text.toLowerCase();
+    if (lower.startsWith('/help')) {
+      this.addChat('Commands: /help, /roll, /dance, /who, /levelup, /maxlevel', 'sys');
+    } else if (lower.startsWith('/roll')) {
+      const roll = Math.floor(Math.random() * 100) + 1;
+      this.addChat(`You roll ${roll} (1-100).`, 'sys');
+    } else if (lower.startsWith('/dance')) {
+      this.addChat('You bust out some moves in the middle of Goldshire!', 'sys');
+    } else if (lower.startsWith('/who')) {
+      this.addChat('Zone: Elwynn Forest (6 players online: Farley, Argus, Dughan, Pestle, Kobold, You)', 'sys');
+    } else if (lower.startsWith('/levelup')) {
+      if (this.player) {
+        if (this.player.level < 10) {
+          const needed = this.player.maxXp - this.player.xp;
+          this.player.gainXp(needed, this);
+        } else {
+          this.addChat('You are already at the maximum level!', 'err');
+        }
+      }
+    } else if (lower.startsWith('/poweroverwhelming') || lower.startsWith('/maxlevel')) {
+      if (this.player) {
+        if (this.player.level < 10) {
+          this.addChat('Cheat enabled: Power Overwhelming!', 'sys');
+          while (this.player.level < 10) {
+            const needed = this.player.maxXp - this.player.xp;
+            this.player.gainXp(needed, this);
+          }
+        } else {
+          this.addChat('You are already at the maximum level!', 'err');
+        }
+      }
+    }
+  }
+
+  spawnSpeechBubble(entityId, entityGroup, text) {
+    // 1. Remove existing bubble for this entity
+    const existingIndex = this._activeBubbles.findIndex(b => b.id === entityId);
+    if (existingIndex !== -1) {
+      this._activeBubbles[existingIndex].el.remove();
+      clearTimeout(this._activeBubbles[existingIndex].timeoutId);
+      this._activeBubbles.splice(existingIndex, 1);
+    }
+
+    // 2. Create bubble DOM element
+    const el = document.createElement('div');
+    el.className = 'speech-bubble';
+    el.textContent = text;
+    this._bubblesContainer.appendChild(el);
+
+    // 3. Trigger fade-in
+    setTimeout(() => el.classList.add('visible'), 20);
+
+    // 4. Set fade-out and destruction timer
+    const timeoutId = setTimeout(() => {
+      el.classList.remove('visible');
+      // wait for CSS transition before removing from DOM
+      setTimeout(() => {
+        el.remove();
+        const idx = this._activeBubbles.findIndex(b => b.el === el);
+        if (idx !== -1) this._activeBubbles.splice(idx, 1);
+      }, 250);
+    }, 4000);
+
+    // 5. Save reference
+    this._activeBubbles.push({ id: entityId, el, group: entityGroup, timeoutId });
+  }
+
+  updateSpeechBubbles(camera) {
+    if (this._activeBubbles.length === 0) return;
+    const tempV = new THREE.Vector3();
+
+    this._activeBubbles.forEach(b => {
+      // Get world position of the entity
+      b.group.getWorldPosition(tempV);
+      tempV.y += 2.4; // Offset to sit above the head
+
+      // Project onto normalized device coordinates
+      tempV.project(camera);
+
+      // Hide if behind the camera
+      if (tempV.z > 1) {
+        b.el.style.display = 'none';
+      } else {
+        // Map to screen pixel coordinates
+        const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (tempV.y * -0.5 + 0.5) * window.innerHeight;
+        
+        b.el.style.display = 'block';
+        b.el.style.left = `${x}px`;
+        b.el.style.top = `${y}px`;
+      }
+    });
   }
 
   // ── Minimap ───────────────────────────────────────────────────────────────
@@ -163,35 +387,66 @@ export class HUD3D {
     ctx.arc(W / 2, H / 2, W / 2 - 2, 0, Math.PI * 2);
     ctx.clip();
 
-    // Road (tan line)
+    // 1. Roads (tan lines)
     ctx.strokeStyle = '#7a6a48';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
+    
+    // North-South road
     ctx.beginPath();
-    for (let i = 0; i < 30; i++) {
-      const wx = -64 + i * 14;
-      const wz = Math.sin(i * 0.3) * 8;
-      const mm = toMM(wx, wz);
-      i === 0 ? ctx.moveTo(mm.x, mm.y) : ctx.lineTo(mm.x, mm.y);
-    }
+    const nsStart = toMM(0, -55);
+    const nsEnd = toMM(0, 95);
+    ctx.moveTo(nsStart.x, nsStart.y);
+    ctx.lineTo(nsEnd.x, nsEnd.y);
     ctx.stroke();
 
-    // River (blue line)
-    ctx.strokeStyle = '#2a5080';
-    ctx.lineWidth = 3;
+    // East-West road
     ctx.beginPath();
-    for (let i = 0; i <= 20; i++) {
-      const t  = i / 20;
-      const wx = 80 + Math.sin(t * Math.PI * 1.8) * 25;
-      const wz = -200 + t * 400;
-      const mm = toMM(wx, wz);
-      i === 0 ? ctx.moveTo(mm.x, mm.y) : ctx.lineTo(mm.x, mm.y);
-    }
+    const ewStart = toMM(-90, 20);
+    const ewEnd = toMM(90, 20);
+    ctx.moveTo(ewStart.x, ewStart.y);
+    ctx.lineTo(ewEnd.x, ewEnd.y);
     ctx.stroke();
 
-    // Abbey landmark (gold square)
-    const abbeyMM = toMM(-80, -20);
-    ctx.fillStyle = '#c8a020';
-    ctx.fillRect(abbeyMM.x - 5, abbeyMM.y - 4, 10, 8);
+    // 2. Crystal Lake (blue circle)
+    const lakeCenter = toMM(70, 20);
+    const lakeEdge = toMM(70 + 25, 20);
+    const lakeRadius = Math.abs(lakeEdge.x - lakeCenter.x);
+    ctx.fillStyle = '#225280';
+    ctx.beginPath();
+    ctx.arc(lakeCenter.x, lakeCenter.y, lakeRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Buildings & Landmark squares
+    const drawMarker = (wx, wz, size, color) => {
+      const mm = toMM(wx, wz);
+      ctx.fillStyle = color;
+      ctx.fillRect(mm.x - size / 2, mm.y - size / 2, size, size);
+    };
+
+    // Northshire Abbey (Gold square, larger)
+    drawMarker(0, -60, 7, '#c8a020');
+
+    // Lion's Pride Inn (Tavern - brown square)
+    drawMarker(-22, 5, 5, '#8c5832');
+
+    // Blacksmith (Grey square)
+    drawMarker(22, 5, 4, '#737373');
+
+    // Town Hall / Barracks (Grey square)
+    drawMarker(22, 40, 4, '#595959');
+
+    // General Store (Brown square)
+    drawMarker(-22, 40, 4, '#8c5832');
+
+    // Dock House (Brown square)
+    drawMarker(50, 45, 4, '#8c5832');
+
+    // Town Well (Tiny light-blue circle)
+    const wellMM = toMM(-6, 20);
+    ctx.fillStyle = '#4ba3c3';
+    ctx.beginPath();
+    ctx.arc(wellMM.x, wellMM.y, 2, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
 
@@ -251,10 +506,10 @@ export class HUD3D {
   // ── Action bar ────────────────────────────────────────────────────────────
 
   static ACTIONS = [
-    { id: 'deploy',  icon: '⚡', name: 'Deploy Code',    cd: 1.5, type: 'combat' },
-    { id: 'review',  icon: '🔍', name: 'Code Review',   cd: 8,   type: 'combat' },
-    { id: 'coffee',  icon: '☕', name: 'Coffee Break',  cd: 6,   type: 'spell'  },
-    { id: 'monitor', icon: '🖥', name: 'Toggle Monitor',cd: 0.5, type: 'utility'},
+    { id: 'deploy',  icon: '⚡', name: 'Deploy Code',    cd: 1.5, type: 'combat', energy: 25 },
+    { id: 'review',  icon: '🔍', name: 'Code Review',   cd: 8,   type: 'combat', energy: 40 },
+    { id: 'coffee',  icon: '☕', name: 'Coffee Break',  cd: 6,   type: 'spell',  energy: 0  },
+    { id: 'monitor', icon: '🖥', name: 'Toggle Monitor',cd: 0.5, type: 'utility', energy: 0  },
   ];
 
   _buildActionBar() {
@@ -266,7 +521,7 @@ export class HUD3D {
     HUD3D.ACTIONS.forEach((action, i) => {
       const slot = document.createElement('div');
       slot.className = 'action-slot';
-      slot.title = `${action.name} (${i + 1})`;
+      slot.title = `${action.name} (Key: ${i + 1})${action.energy > 0 ? ` - Cost: ${action.energy} Energy` : ''}`;
 
       const iconSpan = document.createElement('span');
       iconSpan.className = 'slot-icon';
@@ -297,6 +552,10 @@ export class HUD3D {
     if (slotIndex < 0 || slotIndex >= HUD3D.ACTIONS.length) return null;
     if (this._cooldowns[slotIndex] > 0) return null;
     const action = HUD3D.ACTIONS[slotIndex];
+    if (this.player && action.energy > 0 && this.player.mp < action.energy) {
+      this.addChat('Not enough energy!', 'err');
+      return null;
+    }
     this._cooldowns[slotIndex] = action.cd;
     this._slotEls[slotIndex].slot.classList.add('action-active');
     setTimeout(() => this._slotEls[slotIndex].slot.classList.remove('action-active'), 150);
