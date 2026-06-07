@@ -1,11 +1,19 @@
 import { CLIENT_ID, MOCK_UPLOAD, ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE_BYTES } from './config.js';
-import { setCookie, setIdTokenCookie, getCookie, getIdToken, showSignedIn, getJwtExp, signOut } from './auth.js';
+import {
+  setCookie,
+  setIdTokenCookie,
+  getCookie,
+  getIdToken,
+  showSignedIn,
+  getJwtExp,
+  signOut,
+} from './auth.js';
 import { escapeHtml, updateProgress } from './utils.js';
 import { getSignedUrl, uploadToSignedUrl } from './upload.js';
 import { beginMetadataWait, showMetadata } from './metadata.js';
 import { runMockUpload } from './mock.js';
 
-window.showMetadata = function(metadata) {
+window.showMetadata = function (metadata) {
   if (typeof window.__realShowMetadata === 'function') {
     window.__realShowMetadata(metadata);
     return;
@@ -37,10 +45,10 @@ window.showMetadata = function(metadata) {
   }
 };
 
-window.onload = function() {
+window.onload = function () {
   // Make MOCK_UPLOAD available globally for auth.js
   window.MOCK_UPLOAD = MOCK_UPLOAD;
-  
+
   // Cache DOM elements
   const elements = {
     banner: document.getElementById('mockBanner'),
@@ -53,21 +61,23 @@ window.onload = function() {
     downloadLink: document.getElementById('downloadLink'),
     progressBar: document.getElementById('progressBar'),
     progressText: document.getElementById('progressText'),
-    signinStatus: document.getElementById('signin-status')
+    signinStatus: document.getElementById('signin-status'),
   };
-  
+
   // Initialize mode banner
   if (elements.banner && elements.bannerMsg) {
-    const mode = MOCK_UPLOAD ? {
-      text: 'MOCK UPLOAD MODE — calls are simulated',
-      remove: 'mode-live',
-      add: 'mode-mock'
-    } : {
-      text: 'LIVE MODE — performing real uploads and metadata polling',
-      remove: 'mode-mock',
-      add: 'mode-live'
-    };
-    
+    const mode = MOCK_UPLOAD
+      ? {
+          text: 'MOCK UPLOAD MODE — calls are simulated',
+          remove: 'mode-live',
+          add: 'mode-mock',
+        }
+      : {
+          text: 'LIVE MODE — performing real uploads and metadata polling',
+          remove: 'mode-mock',
+          add: 'mode-live',
+        };
+
     elements.bannerMsg.textContent = mode.text;
     elements.banner.classList.remove(mode.remove);
     elements.banner.classList.add(mode.add);
@@ -77,7 +87,10 @@ window.onload = function() {
   // Helper to update upload button state
   const updateUploadButton = () => {
     if (elements.uploadButton && elements.videoInput) {
-      elements.uploadButton.disabled = !(elements.videoInput.files.length && (getIdToken() || MOCK_UPLOAD));
+      elements.uploadButton.disabled = !(
+        elements.videoInput.files.length &&
+        (getIdToken() || MOCK_UPLOAD)
+      );
     }
   };
 
@@ -101,7 +114,7 @@ window.onload = function() {
   if (window.google?.accounts?.id) {
     google.accounts.id.initialize({
       client_id: CLIENT_ID,
-      callback: (response) => {
+      callback: response => {
         if (response?.credential) {
           try {
             setIdTokenCookie(response.credential);
@@ -118,14 +131,15 @@ window.onload = function() {
           }
         }
       },
-      auto_select: false
+      auto_select: false,
     });
-    
-    google.accounts.id.renderButton(
-      document.getElementById('g_id_signin'),
-      { theme: 'filled_blue', size: 'large', width: 240 }
-    );
-    
+
+    google.accounts.id.renderButton(document.getElementById('g_id_signin'), {
+      theme: 'filled_blue',
+      size: 'large',
+      width: 240,
+    });
+
     elements.signinStatus?.classList.add('hidden');
 
     // Setup sign-out button
@@ -133,9 +147,9 @@ window.onload = function() {
   }
 
   if (elements.videoInput) {
-    elements.videoInput.addEventListener('change', function() {
+    elements.videoInput.addEventListener('change', function () {
       const file = this.files[0];
-      
+
       if (!file) {
         if (elements.uploadButton) elements.uploadButton.disabled = true;
         if (elements.fileInfo) elements.fileInfo.innerHTML = '';
@@ -168,10 +182,10 @@ window.onload = function() {
   }
 
   if (elements.uploadButton) {
-    elements.uploadButton.addEventListener('click', async function() {
+    elements.uploadButton.addEventListener('click', async function () {
       const file = elements.videoInput?.files[0];
       if (!file) return;
-      
+
       if (!getIdToken() && !MOCK_UPLOAD) {
         if (elements.fileInfo) {
           elements.fileInfo.innerHTML = '<span class="error">Sign in with Google first.</span>';
@@ -199,18 +213,18 @@ window.onload = function() {
 
         updateProgress(elements.progressBar, elements.progressText, 50, 'Uploading file...');
         await uploadToSignedUrl(url, file, {
-          progressBarEl: elements.progressBar, 
-          progressTextEl: elements.progressText
+          progressBarEl: elements.progressBar,
+          progressTextEl: elements.progressText,
         });
 
         updateProgress(elements.progressBar, elements.progressText, 100, 'Upload complete!');
         if (elements.resultText) {
-          elements.resultText.innerHTML = '<span class="success">✓ File uploaded successfully!</span>';
+          elements.resultText.innerHTML =
+            '<span class="success">✓ File uploaded successfully!</span>';
         }
         elements.downloadLink?.classList.add('hidden');
 
         beginMetadataWait(file);
-
       } catch (error) {
         const errorMsg = error.message || String(error);
         if (elements.resultText) {
@@ -222,7 +236,6 @@ window.onload = function() {
   }
 
   // Monitor the signed-in UI for unexpected changes and auto-restore when necessary
-
 
   window.beginMetadataWait = beginMetadataWait;
   window.__realShowMetadata = showMetadata;

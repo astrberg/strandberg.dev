@@ -1,4 +1,4 @@
-export const colliders = [];
+const colliders = [];
 
 export function addCircleCollider(x, z, radius) {
   colliders.push({ type: 'circle', x, z, radius });
@@ -35,12 +35,12 @@ export function resolveCollisions(position, radius) {
       // Circle-AABB collision (closest point projection)
       const closestX = Math.max(c.xMin, Math.min(position.x, c.xMax));
       const closestZ = Math.max(c.zMin, Math.min(position.z, c.zMax));
-      
+
       const dx = position.x - closestX;
       const dz = position.z - closestZ;
       const distSq = dx * dx + dz * dz;
       const radiusSq = radius * radius;
-      
+
       if (distSq < radiusSq) {
         const dist = Math.sqrt(distSq);
         const overlap = radius - dist;
@@ -54,7 +54,7 @@ export function resolveCollisions(position, radius) {
           const top = position.z - c.zMin;
           const bottom = c.zMax - position.z;
           const min = Math.min(left, right, top, bottom);
-          
+
           if (min === left) position.x -= radius;
           else if (min === right) position.x += radius;
           else if (min === top) position.z -= radius;

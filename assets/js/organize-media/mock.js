@@ -3,7 +3,7 @@ import { wait, updateProgress } from './utils.js';
 export async function runMockUpload(file) {
   const progressBar = document.getElementById('progressBar');
   const progressText = document.getElementById('progressText');
-  
+
   updateProgress(progressBar, progressText, 25, 'Getting upload URL...');
   await wait(400);
   updateProgress(progressBar, progressText, 50, 'Uploading file...');
@@ -14,7 +14,7 @@ export async function runMockUpload(file) {
   if (resultText) {
     resultText.innerHTML = `<span class="success">✓ Mock upload complete for ${file.name}</span>`;
   }
-  
+
   const downloadLink = document.getElementById('downloadLink');
   if (downloadLink) {
     downloadLink.href = '#';
@@ -34,11 +34,12 @@ export function getMockMetadata(file) {
         ai: {
           confidence: 'medium',
           date: '2004-01-01T00:00:00',
-          reasoning: "The primary clue is a banner with the 'e.on' logo visible in the background. The low-res format and filename indicate early 2000s source."
-        }
+          reasoning:
+            "The primary clue is a banner with the 'e.on' logo visible in the background. The low-res format and filename indicate early 2000s source.",
+        },
       },
-      file: `/tmp/${file.name}`
-    }
+      file: `/tmp/${file.name}`,
+    },
   };
 }
 

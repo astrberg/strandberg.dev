@@ -15,8 +15,8 @@ export async function getSignedUrl(file) {
     headers: {
       'X-Upload-Content-Type': file.type,
       'X-Upload-Content-Length': file.size,
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!signedUrlResponse.ok) {
@@ -31,15 +31,15 @@ export async function getSignedUrl(file) {
   return url;
 }
 
-export async function uploadToSignedUrl(url, file, {progressBarEl, progressTextEl}) {
+export async function uploadToSignedUrl(url, file, { progressBarEl, progressTextEl }) {
   updateProgress(progressBarEl, progressTextEl, 50, 'Uploading file...');
   const uploadResponse = await fetch(url, {
     method: 'PUT',
     headers: {
       'Content-Type': file.type,
-      'x-goog-content-length-range': `0,${file.size}`
+      'x-goog-content-length-range': `0,${file.size}`,
     },
-    body: file
+    body: file,
   });
 
   if (!uploadResponse.ok) {

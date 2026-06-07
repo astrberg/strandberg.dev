@@ -3,7 +3,6 @@ import { getHeightAt } from './world.js';
 import { loadGLTF, findClip, cloneModel } from './model-loader.js';
 import { MAX_LEVEL } from './player.js';
 
-
 // ── Campus NPC definitions ───────────────────────────────────────────────────
 
 const NPC_DEFS = [
@@ -15,24 +14,28 @@ const NPC_DEFS = [
     level: 6,
     pos: [13, 6],
     color: 0x6080a0,
-    patrol: [[13, 6], [14, 11], [14, 2]],
+    patrol: [
+      [13, 6],
+      [14, 11],
+      [14, 2],
+    ],
     dialogue: [
       "Welcome to Goldshire, traveler! If your armor needs mending or your sword needs honing, you've come to the right place.",
-      "Stormwind keeps us busy with orders for the guard, but I always have time for a paying customer.",
+      'Stormwind keeps us busy with orders for the guard, but I always have time for a paying customer.',
       "Watch out for the Kobolds in the mines to the south. They've been getting bolder lately.",
     ],
   },
   {
     id: 'the_barista',
     name: 'Innkeeper Farley',
-    title: 'Lion\'s Pride Inn',
+    title: "Lion's Pride Inn",
     portrait: '☕',
     level: 40,
     pos: [-13, 5],
     color: 0xb08040,
     dialogue: [
       "Welcome to the Lion's Pride Inn! Grab a seat by the hearth — our dwarven ale is cold and the mutton is fresh.",
-      "Travelers from all over Azeroth rest their heads here. Just keep the brawling to a minimum.",
+      'Travelers from all over Azeroth rest their heads here. Just keep the brawling to a minimum.',
       "If you're looking for work, Marshal Dughan out in the crossroads is looking for help dealing with the local pests.",
     ],
   },
@@ -44,11 +47,15 @@ const NPC_DEFS = [
     level: 20,
     pos: [13, 40],
     color: 0xd0d0ff,
-    patrol: [[13, 40], [13, 35], [13, 45]],
+    patrol: [
+      [13, 40],
+      [13, 35],
+      [13, 45],
+    ],
     dialogue: [
-      "The Sprint watches over all who dwell in Elwynn. May it guide your velocity, developer.",
-      "These are troubled times. Technical debt grows bolder, and kobolds push ever further into the server farm.",
-      "I facilitate the standup for those lost to merge conflicts. The standup bell rings for them at nine.",
+      'The Sprint watches over all who dwell in Elwynn. May it guide your velocity, developer.',
+      'These are troubled times. Technical debt grows bolder, and kobolds push ever further into the server farm.',
+      'I facilitate the standup for those lost to merge conflicts. The standup bell rings for them at nine.',
     ],
   },
   {
@@ -60,11 +67,15 @@ const NPC_DEFS = [
     pos: [0, 85],
     color: 0xa06040,
     hostile: true,
-    patrol: [[0, 85], [-5, 90], [5, 80]],
+    patrol: [
+      [0, 85],
+      [-5, 90],
+      [5, 80],
+    ],
     dialogue: [
-      "You no take my stack trace!!",
-      "Bug no want fix! Bug just want to live in production!",
-      "*segfaults and scurries back into the legacy codebase*",
+      'You no take my stack trace!!',
+      'Bug no want fix! Bug just want to live in production!',
+      '*segfaults and scurries back into the legacy codebase*',
     ],
   },
   {
@@ -76,8 +87,12 @@ const NPC_DEFS = [
     pos: [-25, 80],
     color: 0xa06040,
     hostile: true,
-    patrol: [[-25, 80], [-30, 85], [-20, 75]],
-    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+    patrol: [
+      [-25, 80],
+      [-30, 85],
+      [-20, 75],
+    ],
+    dialogue: ['You no take my stack trace!!', 'Bug no want fix!'],
   },
   {
     id: 'legacy_bug_2',
@@ -88,8 +103,12 @@ const NPC_DEFS = [
     pos: [25, 80],
     color: 0xa06040,
     hostile: true,
-    patrol: [[25, 80], [20, 85], [30, 75]],
-    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+    patrol: [
+      [25, 80],
+      [20, 85],
+      [30, 75],
+    ],
+    dialogue: ['You no take my stack trace!!', 'Bug no want fix!'],
   },
   {
     id: 'legacy_bug_3',
@@ -100,8 +119,12 @@ const NPC_DEFS = [
     pos: [-50, 75],
     color: 0xa06040,
     hostile: true,
-    patrol: [[-50, 75], [-55, 80], [-45, 70]],
-    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+    patrol: [
+      [-50, 75],
+      [-55, 80],
+      [-45, 70],
+    ],
+    dialogue: ['You no take my stack trace!!', 'Bug no want fix!'],
   },
   {
     id: 'legacy_bug_4',
@@ -112,8 +135,12 @@ const NPC_DEFS = [
     pos: [50, 75],
     color: 0xa06040,
     hostile: true,
-    patrol: [[50, 75], [45, 80], [55, 70]],
-    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+    patrol: [
+      [50, 75],
+      [45, 80],
+      [55, 70],
+    ],
+    dialogue: ['You no take my stack trace!!', 'Bug no want fix!'],
   },
   {
     id: 'legacy_bug_5',
@@ -124,8 +151,12 @@ const NPC_DEFS = [
     pos: [0, 90],
     color: 0xa06040,
     hostile: true,
-    patrol: [[0, 90], [-5, 95], [5, 85]],
-    dialogue: ["You no take my stack trace!!", "Bug no want fix!"],
+    patrol: [
+      [0, 90],
+      [-5, 95],
+      [5, 85],
+    ],
+    dialogue: ['You no take my stack trace!!', 'Bug no want fix!'],
   },
   {
     id: 'devops_lead',
@@ -135,11 +166,15 @@ const NPC_DEFS = [
     level: 5,
     pos: [0, 20],
     color: 0x7090b0,
-    patrol: [[0, 20], [0, 12], [0, 28]],
+    patrol: [
+      [0, 20],
+      [0, 12],
+      [0, 28],
+    ],
     dialogue: [
-      "Keep your pipelines green out there, traveler. Flaky bugs have been spotted near the southern woods.",
+      'Keep your pipelines green out there, traveler. Flaky bugs have been spotted near the southern woods.',
       "The King has us running double patrols. Can't be too careful with compliance in Elwynn.",
-      "I heard the audit team to the east might make a push this quarter. Keep your Terraform state clean.",
+      'I heard the audit team to the east might make a push this quarter. Keep your Terraform state clean.',
     ],
   },
   {
@@ -152,39 +187,39 @@ const NPC_DEFS = [
     color: 0x60a060,
     dialogue: [
       "Pssst. You there — I'm not just an alchemist. I have access to every KPI in the Kingdom.",
-      "The quarterly performance numbers are more volatile than the engineers give them credit for.",
-      "If you come across any anomalous transaction patterns in the database, report it to me immediately.",
+      'The quarterly performance numbers are more volatile than the engineers give them credit for.',
+      'If you come across any anomalous transaction patterns in the database, report it to me immediately.',
     ],
   },
 ];
 
 // Model assignments per NPC
 const NPC_MODELS = {
-  'head_of_engineering': '/assets/models/knight.glb',
-  'the_barista':         '/assets/models/barbarian.glb',
-  'the_scrum_master':    '/assets/models/mage.glb',
-  'legacy_bug':          '/assets/models/rogue_hooded.glb',
-  'devops_lead':         '/assets/models/knight.glb',
-  'data_analyst':        '/assets/models/rogue.glb',
+  head_of_engineering: '/assets/models/knight.glb',
+  the_barista: '/assets/models/barbarian.glb',
+  the_scrum_master: '/assets/models/mage.glb',
+  legacy_bug: '/assets/models/rogue_hooded.glb',
+  devops_lead: '/assets/models/knight.glb',
+  data_analyst: '/assets/models/rogue.glb',
 };
 
 // ── NPC 3D class ─────────────────────────────────────────────────────────────
 
 export class NPC3D {
   constructor(def, scene) {
-    this.def          = def;
-    this.name         = def.name;
-    this.hostile      = def.hostile || false;
+    this.def = def;
+    this.name = def.name;
+    this.hostile = def.hostile || false;
     this.dialogueIndex = 0;
-    this.patrolIndex  = 0;
-    this.patrolWait   = 0;
-    this.patrolSpeed  = 0.04;
+    this.patrolIndex = 0;
+    this.patrolWait = 0;
+    this.patrolSpeed = 0.04;
 
-    this._mixer      = null;
+    this._mixer = null;
     this._idleAction = null;
     this._walkAction = null;
-    this._isMoving   = false;
-    this._boxGroup   = new THREE.Group();
+    this._isMoving = false;
+    this._boxGroup = new THREE.Group();
 
     this.group = new THREE.Group();
     scene.add(this.group);
@@ -279,7 +314,11 @@ export class NPC3D {
   }
 
   _playAttackAnim() {
-    this._playOnce('1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Chop', '1H_Melee_Attack_Slice_Horizontal');
+    this._playOnce(
+      '1H_Melee_Attack_Slice_Diagonal',
+      '1H_Melee_Attack_Chop',
+      '1H_Melee_Attack_Slice_Horizontal'
+    );
   }
 
   _buildMesh() {
@@ -288,7 +327,7 @@ export class NPC3D {
     // Body
     const bodyGeo = new THREE.CylinderGeometry(0.35, 0.4, 1.6, 8);
     const bodyMat = new THREE.MeshLambertMaterial({ color });
-    const body    = new THREE.Mesh(bodyGeo, bodyMat);
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.y = 0.8;
     body.castShadow = true;
     this._boxGroup.add(body);
@@ -296,7 +335,7 @@ export class NPC3D {
     // Head
     const headGeo = new THREE.SphereGeometry(0.38, 10, 8);
     const headMat = new THREE.MeshLambertMaterial({ color: this.hostile ? 0x806040 : 0xe0b880 });
-    const head    = new THREE.Mesh(headGeo, headMat);
+    const head = new THREE.Mesh(headGeo, headMat);
     head.position.y = 1.9;
     head.castShadow = true;
     this._boxGroup.add(head);
@@ -304,35 +343,39 @@ export class NPC3D {
     // Cloak / tabard
     const cloakGeo = new THREE.ConeGeometry(0.5, 1.0, 8, 1, true);
     const cloakMat = new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide });
-    const cloak    = new THREE.Mesh(cloakGeo, cloakMat);
+    const cloak = new THREE.Mesh(cloakGeo, cloakMat);
     cloak.position.y = 0.45;
     this._boxGroup.add(cloak);
 
     // Shadow disc
     const shadowGeo = new THREE.CircleGeometry(0.5, 10);
-    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
-    const shadow    = new THREE.Mesh(shadowGeo, shadowMat);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.3,
+    });
+    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = 0.02;
     this._boxGroup.add(shadow);
   }
 
   _buildLabel() {
-    const canvas  = document.createElement('canvas');
-    canvas.width  = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
     canvas.height = 48;
-    const ctx2d   = canvas.getContext('2d');
+    const ctx2d = canvas.getContext('2d');
 
-    const color   = this.hostile ? '#ff6060' : '#ffe890';
-    ctx2d.font    = 'bold 22px Georgia, serif';
+    const color = this.hostile ? '#ff6060' : '#ffe890';
+    ctx2d.font = 'bold 22px Georgia, serif';
     ctx2d.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx2d.shadowBlur  = 6;
-    ctx2d.fillStyle   = color;
-    ctx2d.textAlign   = 'center';
+    ctx2d.shadowBlur = 6;
+    ctx2d.fillStyle = color;
+    ctx2d.textAlign = 'center';
     ctx2d.fillText(this.name, 128, 28);
 
     if (this.def.title) {
-      ctx2d.font      = '16px Georgia, serif';
+      ctx2d.font = '16px Georgia, serif';
       ctx2d.fillStyle = this.hostile ? '#c04040' : '#90a870';
       ctx2d.fillText(this.def.title, 128, 46);
     }
@@ -348,7 +391,7 @@ export class NPC3D {
   /** Async: try to load a glTF model. Falls back to box mesh on failure. */
   async initModel(modelIndex) {
     const lookupId = this.def.id.startsWith('legacy_bug') ? 'legacy_bug' : this.def.id;
-    const url  = NPC_MODELS[lookupId];
+    const url = NPC_MODELS[lookupId];
     if (!url) return;
     const gltf = await loadGLTF(url);
     if (!gltf) return;
@@ -356,12 +399,14 @@ export class NPC3D {
     this._boxGroup.visible = false;
 
     const model = cloneModel(gltf);
-    const bbox  = new THREE.Box3().setFromObject(model);
+    const bbox = new THREE.Box3().setFromObject(model);
     const modelH = bbox.max.y - bbox.min.y;
-    const scale  = 1.72 / modelH;
+    const scale = 1.72 / modelH;
     model.scale.setScalar(scale);
     model.position.y = -bbox.min.y * scale;
-    model.traverse(c => { if (c.isMesh) c.castShadow = true; });
+    model.traverse(c => {
+      if (c.isMesh) c.castShadow = true;
+    });
     this.group.add(model);
 
     // Update label height to sit above glTF head
@@ -474,7 +519,7 @@ export class NPC3D {
       return;
     }
 
-    const target  = this._patrolPoints[this.patrolIndex];
+    const target = this._patrolPoints[this.patrolIndex];
     const current = this.group.position;
     const dx = target.x - current.x;
     const dz = target.z - current.z;
@@ -482,7 +527,7 @@ export class NPC3D {
 
     if (dist < 0.25) {
       this.patrolIndex = (this.patrolIndex + 1) % this._patrolPoints.length;
-      this.patrolWait  = 1.5 + Math.random() * 2;
+      this.patrolWait = 1.5 + Math.random() * 2;
       return;
     }
 
@@ -498,7 +543,7 @@ export class NPC3D {
     const step = this.patrolSpeed;
     current.x += (dx / dist) * step;
     current.z += (dz / dist) * step;
-    current.y  = getHeightAt(current.x, current.z);
+    current.y = getHeightAt(current.x, current.z);
     this.group.rotation.y = Math.atan2(dx, dz);
   }
 
@@ -512,7 +557,9 @@ export class NPC3D {
     return this.group.position.distanceTo(pos);
   }
 
-  get position() { return this.group.position; }
+  get position() {
+    return this.group.position;
+  }
 }
 
 export function createNPCs(scene) {

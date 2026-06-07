@@ -8,7 +8,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.domElement.id = 'bg-canvas';
 document.body.prepend(renderer.domElement);
 
-const scene  = new THREE.Scene();
+const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x03050e);
 scene.fog = new THREE.FogExp2(0x04060f, 0.006);
 
@@ -34,9 +34,9 @@ scene.add(moonLight);
     const y = posAttr.getY(i) / 700; // -1 to 1
     // Horizon: deep blue-black 0x060b18, zenith: near-black 0x020408
     const t = Math.max(0, y);
-    cols[i*3]   = 0.024 * (1 - t) + 0.008 * t;
-    cols[i*3+1] = 0.043 * (1 - t) + 0.016 * t;
-    cols[i*3+2] = 0.094 * (1 - t) + 0.031 * t;
+    cols[i * 3] = 0.024 * (1 - t) + 0.008 * t;
+    cols[i * 3 + 1] = 0.043 * (1 - t) + 0.016 * t;
+    cols[i * 3 + 2] = 0.094 * (1 - t) + 0.031 * t;
   }
   geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
   scene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false })));
@@ -70,7 +70,12 @@ scene.add(moonLight);
   scene.add(coreMesh);
 
   // Soft glow halo
-  const glowMat = new THREE.SpriteMaterial({ color: 0x5060a0, transparent: true, opacity: 0.08, fog: false });
+  const glowMat = new THREE.SpriteMaterial({
+    color: 0x5060a0,
+    transparent: true,
+    opacity: 0.08,
+    fog: false,
+  });
   const glow = new THREE.Sprite(glowMat);
   glow.scale.set(110, 110, 1);
   glow.position.copy(moonMesh.position);
@@ -83,17 +88,21 @@ scene.add(moonLight);
   const pos = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
     const theta = Math.random() * Math.PI * 2;
-    const phi   = Math.acos(1 - Math.random());
-    const r     = 690;
-    pos[i*3]   =  r * Math.sin(phi) * Math.cos(theta);
-    pos[i*3+1] =  Math.abs(r * Math.cos(phi)) + 15;
-    pos[i*3+2] =  r * Math.sin(phi) * Math.sin(theta);
+    const phi = Math.acos(1 - Math.random());
+    const r = 690;
+    pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    pos[i * 3 + 1] = Math.abs(r * Math.cos(phi)) + 15;
+    pos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
-    color: 0xe0e8ff, size: 1.6, sizeAttenuation: false,
-    fog: false, transparent: true, opacity: 0.88,
+    color: 0xe0e8ff,
+    size: 1.6,
+    sizeAttenuation: false,
+    fog: false,
+    transparent: true,
+    opacity: 0.88,
   });
   scene.add(new THREE.Points(geo, mat));
 }
@@ -108,11 +117,11 @@ function makeHillLayer(zDepth, baseY, color, count) {
   const mat = new THREE.MeshBasicMaterial({ color, fog: false });
   for (let i = 0; i < count; i++) {
     const xSpread = 500;
-    const x      = -xSpread / 2 + (i / (count - 1)) * xSpread;
+    const x = -xSpread / 2 + (i / (count - 1)) * xSpread;
     const height = 14 + seeded(i * 5 + zDepth * 0.1) * 28;
     const radius = 28 + seeded(i * 5 + zDepth * 0.1 + 1) * 52;
-    const xOff   = (seeded(i * 5 + 2) - 0.5) * 60;
-    const geo    = new THREE.SphereGeometry(radius, 14, 10);
+    const xOff = (seeded(i * 5 + 2) - 0.5) * 60;
+    const geo = new THREE.SphereGeometry(radius, 14, 10);
     geo.scale(1.0, height / radius, 1.2);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x + xOff, baseY - radius * 0.68, zDepth);
@@ -120,10 +129,10 @@ function makeHillLayer(zDepth, baseY, color, count) {
   }
 }
 
-makeHillLayer(-400, -1.5, 0x050b06, 14);  // far
-makeHillLayer(-280, -1.5, 0x040a04, 11);  // mid-far
-makeHillLayer(-180, -1.5, 0x050e05, 9);   // mid
-makeHillLayer(-100, -1.5, 0x060f07, 7);   // near
+makeHillLayer(-400, -1.5, 0x050b06, 14); // far
+makeHillLayer(-280, -1.5, 0x040a04, 11); // mid-far
+makeHillLayer(-180, -1.5, 0x050e05, 9); // mid
+makeHillLayer(-100, -1.5, 0x060f07, 7); // near
 
 // ── Tree silhouettes ──────────────────────────────────────────────────────────
 const silMat = new THREE.MeshBasicMaterial({ color: 0x020602, fog: false });
@@ -158,21 +167,25 @@ for (let i = 0; i < 70; i++) {
 // ── Fireflies ─────────────────────────────────────────────────────────────────
 const FF_COUNT = 90;
 const ffPosArr = new Float32Array(FF_COUNT * 3);
-const ffState  = [];
+const ffState = [];
 for (let i = 0; i < FF_COUNT; i++) {
-  ffPosArr[i*3]   = (seeded(i * 3 + 400) - 0.5) * 110;
-  ffPosArr[i*3+1] = seeded(i * 3 + 401) * 22 - 1.5;
-  ffPosArr[i*3+2] = -18 - seeded(i * 3 + 402) * 90;
+  ffPosArr[i * 3] = (seeded(i * 3 + 400) - 0.5) * 110;
+  ffPosArr[i * 3 + 1] = seeded(i * 3 + 401) * 22 - 1.5;
+  ffPosArr[i * 3 + 2] = -18 - seeded(i * 3 + 402) * 90;
   ffState.push({
-    vy:    0.008 + seeded(i * 3 + 400) * 0.018,
+    vy: 0.008 + seeded(i * 3 + 400) * 0.018,
     phase: seeded(i + 500) * Math.PI * 2,
   });
 }
 const ffGeo = new THREE.BufferGeometry();
 ffGeo.setAttribute('position', new THREE.BufferAttribute(ffPosArr, 3));
 const ffMat = new THREE.PointsMaterial({
-  color: 0xffcc40, size: 3.2, sizeAttenuation: false,
-  transparent: true, opacity: 0.55, fog: false,
+  color: 0xffcc40,
+  size: 3.2,
+  sizeAttenuation: false,
+  transparent: true,
+  opacity: 0.55,
+  fog: false,
 });
 const ffPoints = new THREE.Points(ffGeo, ffMat);
 scene.add(ffPoints);
@@ -194,13 +207,13 @@ function animate() {
   for (let i = 0; i < FF_COUNT; i++) {
     const st = ffState[i];
     st.phase += 0.012;
-    pa.array[i*3]   += Math.sin(st.phase) * 0.018;
-    pa.array[i*3+1] += st.vy;
-    pa.array[i*3+2] += Math.cos(st.phase * 0.8) * 0.008;
-    if (pa.array[i*3+1] > 24) {
-      pa.array[i*3]   = (Math.random() - 0.5) * 110;
-      pa.array[i*3+1] = -1.5;
-      pa.array[i*3+2] = -18 - Math.random() * 90;
+    pa.array[i * 3] += Math.sin(st.phase) * 0.018;
+    pa.array[i * 3 + 1] += st.vy;
+    pa.array[i * 3 + 2] += Math.cos(st.phase * 0.8) * 0.008;
+    if (pa.array[i * 3 + 1] > 24) {
+      pa.array[i * 3] = (Math.random() - 0.5) * 110;
+      pa.array[i * 3 + 1] = -1.5;
+      pa.array[i * 3 + 2] = -18 - Math.random() * 90;
     }
   }
   pa.needsUpdate = true;
@@ -217,7 +230,7 @@ window.addEventListener('resize', () => {
 animate();
 
 // ── Play button ───────────────────────────────────────────────────────────────
-const playBtn     = document.getElementById('play-btn');
+const playBtn = document.getElementById('play-btn');
 const loadingWrap = document.getElementById('loading-bar-container');
 const loadingFill = document.getElementById('loading-bar-fill');
 const loadingText = document.getElementById('loading-text');
@@ -231,14 +244,16 @@ const LOADING_MESSAGES = [
   'Entering the campus\u2026',
 ];
 
-function randf(a, b) { return a + Math.random() * (b - a); }
+function randf(a, b) {
+  return a + Math.random() * (b - a);
+}
 
 playBtn.addEventListener('click', () => {
   playBtn.disabled = true;
   loadingWrap.classList.add('visible');
 
   let progress = 0;
-  let msgIdx   = 0;
+  let msgIdx = 0;
 
   const tick = setInterval(() => {
     progress += randf(1.8, 5.5);
@@ -261,7 +276,9 @@ playBtn.addEventListener('click', () => {
       loadingText.textContent = 'Loading complete.';
       setTimeout(() => {
         fadeOverlay.classList.add('fading');
-        setTimeout(() => { window.location.href = '/world/'; }, 880);
+        setTimeout(() => {
+          window.location.href = '/world/';
+        }, 880);
       }, 380);
     }
   }, 80);

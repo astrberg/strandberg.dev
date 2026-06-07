@@ -21,7 +21,7 @@ export async function formatHttpError(response) {
   if (response.statusText) {
     details += ` ${response.statusText}`;
   }
-  
+
   try {
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
@@ -42,6 +42,6 @@ export async function formatHttpError(response) {
   } catch (e) {
     // If we can't read the response body, just return the status
   }
-  
+
   return details;
 }

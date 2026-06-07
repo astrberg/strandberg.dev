@@ -1,50 +1,53 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { getHeightAt, WORLD_SIZE } from './world.js';
+import { getHeightAt } from './world.js';
 import { loadGLTF } from './model-loader.js';
 import { addCircleCollider } from './physics.js';
 
 // ── Model-based environment ──────────────────────────────────────────────────
 
 const ENV_MODELS = {
-  tree_a:       '/assets/models/tree_a.glb',
-  tree_b:       '/assets/models/tree_b.glb',
-  trees_large:  '/assets/models/trees_large.glb',
+  tree_a: '/assets/models/tree_a.glb',
+  tree_b: '/assets/models/tree_b.glb',
+  trees_large: '/assets/models/trees_large.glb',
   trees_medium: '/assets/models/trees_medium.glb',
-  rock_a:       '/assets/models/rock_a.glb',
-  rock_b:       '/assets/models/rock_b.glb',
-  rock_c:       '/assets/models/rock_c.glb',
-  hills_trees:  '/assets/models/hills_trees.glb',
-  well:         '/assets/models/well.glb',
+  rock_a: '/assets/models/rock_a.glb',
+  rock_b: '/assets/models/rock_b.glb',
+  rock_c: '/assets/models/rock_c.glb',
 };
 
 const envLoaded = {};
 
 export async function loadEnvironmentModels() {
   const entries = Object.entries(ENV_MODELS);
-  await Promise.all(entries.map(async ([key, url]) => {
-    try { envLoaded[key] = await loadGLTF(url); }
-    catch (e) { console.warn(`Env model ${key} failed:`, e); }
-  }));
+  await Promise.all(
+    entries.map(async ([key, url]) => {
+      try {
+        envLoaded[key] = await loadGLTF(url);
+      } catch (e) {
+        console.warn(`Env model ${key} failed:`, e);
+      }
+    })
+  );
 }
 
 function placeEnvModel(key, scene, x, z, scale = 1, rotY = 0, castShadow = true) {
   const gltf = envLoaded[key];
   if (!gltf) return null;
   const model = gltf.scene.clone(true);
-  
+
   model.scale.setScalar(scale);
   model.rotation.y = rotY;
-  
+
   // Calculate bounding box in default position to find the correct bottom offset
   model.position.set(0, 0, 0);
   model.updateMatrixWorld(true);
   const bbox = new THREE.Box3().setFromObject(model);
-  
+
   const gy = getHeightAt(x, z);
   // Align the actual bottom of the mesh to the terrain
   model.position.set(x, gy - bbox.min.y, z);
-  
+
   model.traverse(c => {
     if (c.isMesh) {
       c.castShadow = castShadow;
@@ -82,7 +85,11 @@ function collectTree(trunkGeos, canopyGeos, x, z, scale = 1.0) {
 
   const cone2H = cone1H * 0.65;
   const cone2Geo = new THREE.ConeGeometry(cone1R * 0.7, cone2H, 7);
-  const cone2Matrix = new THREE.Matrix4().makeTranslation(x, gy + trunkH + cone1H * 0.85 + cone2H * 0.4, z);
+  const cone2Matrix = new THREE.Matrix4().makeTranslation(
+    x,
+    gy + trunkH + cone1H * 0.85 + cone2H * 0.4,
+    z
+  );
   cone2Geo.applyMatrix4(cone2Matrix);
   canopyGeos.push(cone2Geo);
 }
@@ -108,12 +115,12 @@ export function buildForest(scene) {
     const rx = -135 + seededRand(seed++) * 270;
     const rz = -135 + seededRand(seed++) * 270;
     const gy = getHeightAt(rx, rz);
-    
+
     // Avoid spawning mountain trees inside or near Crystal Lake (70, 20)
     const ldx = rx - 70;
     const ldz = rz - 20;
     const ldist = Math.sqrt(ldx * ldx + ldz * ldz);
-    
+
     if (gy > 3.5 && ldist > 30) {
       treeInstances.push({ x: rx, z: rz, scale: 1.1 });
     }
@@ -122,10 +129,14 @@ export function buildForest(scene) {
   // 2. Specific clusters inside the valley
   // Abbey courtyard trees (aligned around AX = 0, AZ = -60)
   const abbeyTrees = [
-    [-15, -45], [15, -45], // front left/right
-    [-18, -60], [18, -60], // side left/right
-    [-12, -75], [12, -75], // backyard left/right
-    [-10, -35], [10, -35]  // further front flanking the path
+    [-15, -45],
+    [15, -45], // front left/right
+    [-18, -60],
+    [18, -60], // side left/right
+    [-12, -75],
+    [12, -75], // backyard left/right
+    [-10, -35],
+    [10, -35], // further front flanking the path
   ];
   for (const [tx, tz] of abbeyTrees) {
     treeInstances.push({ x: tx, z: tz, scale: 0.9 });
@@ -136,7 +147,7 @@ export function buildForest(scene) {
     const rx = -80 + seededRand(seed++) * 50;
     const rz = -110 + seededRand(seed++) * 40;
     if (getHeightAt(rx, rz) < 15) {
-       treeInstances.push({ x: rx, z: rz, scale: 1.0 });
+      treeInstances.push({ x: rx, z: rz, scale: 1.0 });
     }
   }
 
@@ -146,7 +157,7 @@ export function buildForest(scene) {
     const radius = 27 + seededRand(seed++) * 8; // 27 to 35 units from center
     const tx = 70 + Math.cos(angle) * radius;
     const tz = 20 + Math.sin(angle) * radius;
-    
+
     // Avoid placing trees directly on the East-West road (z = 20) and outer map boundaries
     if (Math.abs(tz - 20) > 6 && tx < 115) {
       treeInstances.push({ x: tx, z: tz, scale: 1.0 });
@@ -182,14 +193,20 @@ export function buildForest(scene) {
     }
     if (trunkGeos.length > 0) {
       const mergedTrunks = mergeGeometries(trunkGeos, false);
-      const trunkMesh = new THREE.Mesh(mergedTrunks, new THREE.MeshLambertMaterial({ color: 0x4a2e12 }));
+      const trunkMesh = new THREE.Mesh(
+        mergedTrunks,
+        new THREE.MeshLambertMaterial({ color: 0x4a2e12 })
+      );
       trunkMesh.castShadow = true;
       scene.add(trunkMesh);
       trunkGeos.forEach(g => g.dispose());
     }
     if (canopyGeos.length > 0) {
       const mergedCanopy = mergeGeometries(canopyGeos, false);
-      const canopyMesh = new THREE.Mesh(mergedCanopy, new THREE.MeshLambertMaterial({ color: 0x2a5820 }));
+      const canopyMesh = new THREE.Mesh(
+        mergedCanopy,
+        new THREE.MeshLambertMaterial({ color: 0x2a5820 })
+      );
       canopyMesh.castShadow = true;
       scene.add(canopyMesh);
       canopyGeos.forEach(g => g.dispose());
@@ -199,8 +216,14 @@ export function buildForest(scene) {
   // Render Tree Clusters at the very edges (scaled down by 2 for WORLD_SIZE = 256)
   if (envLoaded['trees_large']) {
     const clusterPositions = [
-      [-90, -90], [-60, -100], [90, -80], [100, 70],
-      [-80, 80], [50, 90], [-100, -20], [110, 0],
+      [-90, -90],
+      [-60, -100],
+      [90, -80],
+      [100, 70],
+      [-80, 80],
+      [50, 90],
+      [-100, -20],
+      [110, 0],
     ];
     for (const [cx, cz] of clusterPositions) {
       const key = clusterKeys[Math.abs(cx + cz) % clusterKeys.length];
@@ -212,7 +235,7 @@ export function buildForest(scene) {
   if (envLoaded['rock_a']) {
     let rseed = 1000;
     const rockInstances = [];
-    
+
     // Foothill slopes (within map boundaries)
     for (let i = 0; i < 50; i++) {
       const rx = -120 + seededRand(rseed++) * 240;
@@ -230,7 +253,8 @@ export function buildForest(scene) {
       const radius = 25 + seededRand(rseed++) * 4; // 25 to 29 units from center
       const rx = 70 + Math.cos(angle) * radius;
       const rz = 20 + Math.sin(angle) * radius;
-      if (Math.abs(rz - 20) > 6 && rx < 115) { // Avoid road and map edge
+      if (Math.abs(rz - 20) > 6 && rx < 115) {
+        // Avoid road and map edge
         rockInstances.push([rx, rz]);
       }
     }

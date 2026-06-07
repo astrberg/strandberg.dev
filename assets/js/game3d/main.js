@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { buildTerrain, buildLighting, buildSky, buildFog, getHeightAt } from './world.js';
-import { buildAbbey, buildInn, buildBarracks, buildVineyards, buildRoad, loadBuildingModels } from './buildings.js';
+import {
+  buildAbbey,
+  buildInn,
+  buildBarracks,
+  buildVineyards,
+  buildRoad,
+  loadBuildingModels,
+} from './buildings.js';
 import { buildForest, buildRiver, loadEnvironmentModels } from './environment.js';
 import { createNPCs } from './npcs.js';
 import { Player3D, ThirdPersonCamera } from './player.js';
@@ -16,8 +23,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 // PCFShadowMap (4 samples) vs PCFSoftShadowMap (9 samples) — ~50% shadow cost saving
-renderer.shadowMap.type    = THREE.PCFShadowMap;
-renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 container.appendChild(renderer.domElement);
 
@@ -28,7 +35,7 @@ window.addEventListener('resize', () => {
 });
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
-const scene  = new THREE.Scene();
+const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.3, 1000);
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
@@ -84,10 +91,10 @@ function tick() {
 
 // ── Zone detection ─────────────────────────────────────────────────────────────
 const ZONE_DEFS = [
-  { name: 'Northshire Valley',   xMin: -120, xMax:  120, zMin: -120, zMax: -30 },
-  { name: 'Goldshire Crossroads', xMin:  -35, xMax:   35, zMin:  -30, zMax:  60 },
-  { name: 'Crystal Lake',        xMin:   35, xMax:  120, zMin:  -30, zMax:  60 },
-  { name: 'Fargodeep Mine',      xMin: -120, xMax:  120, zMin:   60, zMax: 120 },
+  { name: 'Northshire Valley', xMin: -120, xMax: 120, zMin: -120, zMax: -30 },
+  { name: 'Goldshire Crossroads', xMin: -35, xMax: 35, zMin: -30, zMax: 60 },
+  { name: 'Crystal Lake', xMin: 35, xMax: 120, zMin: -30, zMax: 60 },
+  { name: 'Fargodeep Mine', xMin: -120, xMax: 120, zMin: 60, zMax: 120 },
 ];
 
 function getZone(px, pz) {
@@ -102,13 +109,13 @@ function getZone(px, pz) {
   await buildWorld();
 
   // Player & camera
-  const player  = new Player3D(scene);
+  const player = new Player3D(scene);
   const camCtrl = new ThirdPersonCamera(camera, player);
-  const npcs    = createNPCs(scene);
+  const npcs = createNPCs(scene);
 
   // Link player reference to HUD for speech bubbles
   hud.player = player;
-  
+
   // Load saved level & experience progress
   player.loadProgress(hud);
 
@@ -129,10 +136,10 @@ function getZone(px, pz) {
   hud.addChat('WASD · Move  |  Right-click drag · Look  |  E · Talk  |  Scroll · Zoom', 'sys');
   hud.addChat('1-4 · Action bar  |  Shift · Run', 'sys');
 
-  let currentZone    = initialZone;
-  let targetNPC      = null;
+  let currentZone = initialZone;
+  let targetNPC = null;
   let interactCooldown = 0;
-  let _frameTick     = 0; // used to throttle infrequent checks
+  let _frameTick = 0; // used to throttle infrequent checks
 
   // Mouse click targeting using Raycaster
   const raycaster = new THREE.Raycaster();
@@ -198,15 +205,17 @@ function getZone(px, pz) {
     const delta = Math.min(clock.getDelta(), 0.1);
 
     input.cameraYaw = camCtrl.getYaw();
+    input.isDragging = camCtrl._isDragging;
 
     player.update(input, delta, hud);
-    camCtrl.update();
+    camCtrl.update(input, delta);
 
     for (const npc of npcs) npc.update(delta, player, hud);
 
     // Zone check — throttled to every 10 frames (zones are large, no need to check every tick)
     if (++_frameTick % 10 === 0) {
-      const px = player.position.x, pz = player.position.z;
+      const px = player.position.x,
+        pz = player.position.z;
       const zone = getZone(px, pz);
       if (zone !== currentZone) {
         currentZone = zone;
@@ -218,11 +227,14 @@ function getZone(px, pz) {
 
     // Nearest NPC interaction
     const INTERACT_RANGE = 6;
-    let nearest     = null;
+    let nearest = null;
     let nearestDist = Infinity;
     for (const npc of npcs) {
       const d = npc.distanceTo(player.position);
-      if (d < nearestDist) { nearestDist = d; nearest = npc; }
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearest = npc;
+      }
     }
 
     // Target leash check: clear target if it dies or is too far away (> 35 units)
@@ -234,7 +246,8 @@ function getZone(px, pz) {
       }
     }
 
-    const canInteract = nearestDist < INTERACT_RANGE && !hud.isDialogueOpen && nearest && !nearest.isDead;
+    const canInteract =
+      nearestDist < INTERACT_RANGE && !hud.isDialogueOpen && nearest && !nearest.isDead;
     hud.showInteractPrompt(canInteract, nearest && nearest.hostile);
 
     if (interactCooldown > 0) interactCooldown -= delta;
@@ -256,7 +269,7 @@ function getZone(px, pz) {
         const dmg = 5 + Math.floor(Math.random() * 5);
         hud.addChat(`You hit ${nearest.name} for ${dmg} damage!`, 'sys');
         nearest.takeDamage(dmg, player, hud);
-        
+
         // Still trigger dialogue shout
         hud.addChat(`${nearest.name}: "${line}"`);
         hud.spawnSpeechBubble(nearest.def.id, nearest.group, line);

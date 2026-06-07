@@ -56,7 +56,6 @@ export class HUD3D {
     // Minimap
     this._miniCanvas   = document.getElementById('minimap-canvas');
     this._miniCtx      = this._miniCanvas.getContext('2d');
-    this._minimapBuilt = false;
     // Offscreen canvas holds the static minimap background (road, river, abbey)
     // so drawMinimap() only needs to re-draw the dynamic player/NPC dots each frame
     this._minimapBg    = null;

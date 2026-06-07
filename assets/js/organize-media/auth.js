@@ -7,10 +7,10 @@ export function setCookie(name, value, days, expTimestamp) {
     expires = '; expires=' + date.toUTCString();
   } else if (days) {
     const date = new Date();
-    date.setTime(date.getTime() + (days*24*60*60*1000));
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
     expires = '; expires=' + date.toUTCString();
   }
-  document.cookie = name + '=' + (value || '')  + expires + '; path=/';
+  document.cookie = name + '=' + (value || '') + expires + '; path=/';
 }
 
 export function getCookie(name) {
@@ -29,7 +29,7 @@ export function getJwtExp(token) {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const exp = payload?.exp ? Number(payload.exp) : null;
-    return (exp && !Number.isNaN(exp)) ? Math.floor(exp) : null;
+    return exp && !Number.isNaN(exp) ? Math.floor(exp) : null;
   } catch {
     return null;
   }
@@ -80,16 +80,16 @@ export function showSignedIn() {
   const elements = {
     signin: document.getElementById('g_id_signin'),
     status: document.getElementById('signin-status'),
-    bannerSignout: document.getElementById('bannerSignout')
+    bannerSignout: document.getElementById('bannerSignout'),
   };
-  
+
   elements.signin?.classList.add('hidden');
-  
+
   if (elements.status) {
     elements.status.classList.remove('hidden');
     setTimeout(() => elements.status.classList.add('hidden'), 3000);
   }
-  
+
   elements.bannerSignout?.classList.remove('hidden');
 }
 
@@ -100,27 +100,27 @@ export function signOut() {
     signinStatus: document.getElementById('signin-status'),
     signinDiv: document.getElementById('g_id_signin'),
     uploadButton: document.getElementById('uploadButton'),
-    videoInput: document.getElementById('videoInput')
+    videoInput: document.getElementById('videoInput'),
   };
 
   try {
     const clientDeleted = deleteCookie('idToken');
     setCookie('idToken', '', -1);
-    
-    try { 
-      localStorage.removeItem('g_state'); 
-    } catch (e) { 
-      console.warn('Could not remove g_state:', e); 
+
+    try {
+      localStorage.removeItem('g_state');
+    } catch (e) {
+      console.warn('Could not remove g_state:', e);
     }
-    
+
     if (window.google?.accounts?.id?.disableAutoSelect) {
-      try { 
-        google.accounts.id.disableAutoSelect(); 
-      } catch (err) { 
-        console.warn('google.accounts.id.disableAutoSelect() failed:', err); 
+      try {
+        google.accounts.id.disableAutoSelect();
+      } catch (err) {
+        console.warn('google.accounts.id.disableAutoSelect() failed:', err);
       }
     }
-    
+
     window.idToken = null;
 
     if (clientDeleted || getCookie('idToken') === null) {
@@ -128,7 +128,8 @@ export function signOut() {
         elements.fileInfo.innerHTML = '<span class="success">Signed out.</span>';
       }
     } else if (elements.fileInfo) {
-      elements.fileInfo.innerHTML = '<span class="error">Sign-out incomplete: cookie could not be removed by client. Server-side sign-out may still be required.</span>';
+      elements.fileInfo.innerHTML =
+        '<span class="error">Sign-out incomplete: cookie could not be removed by client. Server-side sign-out may still be required.</span>';
     }
   } catch (err) {
     console.warn('Error during signout cleanup:', err);
@@ -145,6 +146,9 @@ export function signOut() {
   // Re-enable upload button if file is selected
   if (elements.uploadButton && elements.videoInput) {
     const MOCK_UPLOAD = window.MOCK_UPLOAD || false;
-    elements.uploadButton.disabled = !(elements.videoInput.files.length && (getIdToken() || MOCK_UPLOAD));
+    elements.uploadButton.disabled = !(
+      elements.videoInput.files.length &&
+      (getIdToken() || MOCK_UPLOAD)
+    );
   }
 }

@@ -1,14 +1,16 @@
 import * as THREE from 'three';
 
 export const WORLD_SIZE = 256;
-export const TERRAIN_SEGS = 64;
+const TERRAIN_SEGS = 64;
 
 /** Smaller, flat center town heightmap */
-export function terrainHeight(u, v) {
-  const cx = 0.5, cz = 0.5;
-  const dx = u - cx, dz = v - cz;
+function terrainHeight(u, v) {
+  const cx = 0.5,
+    cz = 0.5;
+  const dx = u - cx,
+    dz = v - cz;
   const dist = Math.sqrt(dx * dx + dz * dz);
-  
+
   // Flat center for the town
   let base = 0;
   if (dist > 0.3) {
@@ -28,15 +30,12 @@ export function terrainHeight(u, v) {
 
   // Very gentle noise
   const bump = Math.sin(u * 20) * Math.cos(v * 20) * 0.5;
-  
+
   return Math.max(-5.0, base + bump);
 }
 
 export function buildTerrain(scene) {
-  const geo = new THREE.PlaneGeometry(
-    WORLD_SIZE, WORLD_SIZE,
-    TERRAIN_SEGS, TERRAIN_SEGS
-  );
+  const geo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, TERRAIN_SEGS, TERRAIN_SEGS);
   geo.rotateX(-Math.PI / 2);
 
   const pos = geo.attributes.position;
@@ -62,21 +61,31 @@ export function buildTerrain(scene) {
     let r, g, b;
     if (y < 0.5) {
       // River/low wetland: dark green
-      r = 0.18; g = 0.32; b = 0.10;
+      r = 0.18;
+      g = 0.32;
+      b = 0.1;
     } else if (y < 6) {
       // Valley floor: rich Elwynn green
-      r = 0.20 + Math.sin(x * 18) * 0.03; g = 0.42 + Math.cos(z * 14) * 0.04; b = 0.12;
+      r = 0.2 + Math.sin(x * 18) * 0.03;
+      g = 0.42 + Math.cos(z * 14) * 0.04;
+      b = 0.12;
     } else if (y < 16) {
       // Slope: medium green
-      r = 0.22; g = 0.37; b = 0.13;
+      r = 0.22;
+      g = 0.37;
+      b = 0.13;
     } else if (y < 26) {
       // Upper slope: darker green/brown mix
-      r = 0.28; g = 0.33; b = 0.14;
+      r = 0.28;
+      g = 0.33;
+      b = 0.14;
     } else {
       // Ridge: earthy brown
-      r = 0.35; g = 0.28; b = 0.16;
+      r = 0.35;
+      g = 0.28;
+      b = 0.16;
     }
-    colors[i * 3]     = r;
+    colors[i * 3] = r;
     colors[i * 3 + 1] = g;
     colors[i * 3 + 2] = b;
   }
@@ -96,7 +105,7 @@ export function buildTerrain(scene) {
  *  to avoid repeated trig evaluation for slow-moving entities.
  */
 const _heightCache = new Map();
-const _HEIGHT_CACHE_MAX  = 512;
+const _HEIGHT_CACHE_MAX = 512;
 const _HEIGHT_CACHE_STEP = 0.5; // grid resolution in world units
 
 export function getHeightAt(x, z) {
@@ -110,7 +119,7 @@ export function getHeightAt(x, z) {
 
   const u = (x + WORLD_SIZE / 2) / WORLD_SIZE;
   const v = (z + WORLD_SIZE / 2) / WORLD_SIZE;
-  const h = (u < 0 || u > 1 || v < 0 || v > 1) ? 0 : terrainHeight(u, v);
+  const h = u < 0 || u > 1 || v < 0 || v > 1 ? 0 : terrainHeight(u, v);
 
   // Simple LRU eviction: clear oldest half when limit is reached
   if (_heightCache.size >= _HEIGHT_CACHE_MAX) {
@@ -134,14 +143,14 @@ export function buildLighting(scene) {
   sun.position.set(120, 180, -80);
   sun.castShadow = true;
   // 1024² is sufficient for the visible play area and uses ¼ the GPU memory of 2048²
-  sun.shadow.mapSize.width  = 1024;
+  sun.shadow.mapSize.width = 1024;
   sun.shadow.mapSize.height = 1024;
   sun.shadow.camera.near = 10;
-  sun.shadow.camera.far  = 500;
+  sun.shadow.camera.far = 500;
   // Frustum covers ~160×160 units — enough for the immediate play area
-  sun.shadow.camera.left   = -80;
-  sun.shadow.camera.right  =  80;
-  sun.shadow.camera.top    =  80;
+  sun.shadow.camera.left = -80;
+  sun.shadow.camera.right = 80;
+  sun.shadow.camera.top = 80;
   sun.shadow.camera.bottom = -80;
   scene.add(sun);
 
@@ -159,29 +168,29 @@ export function buildSky(scene) {
   geo.scale(-1, 1, 1); // invert normals
 
   // Vertical gradient via vertex colours
-  const pos    = geo.attributes.position;
+  const pos = geo.attributes.position;
   const colors = new Float32Array(pos.count * 3);
   for (let i = 0; i < pos.count; i++) {
     const y = pos.getY(i);
     const t = (y + 900) / 1800; // 0=bottom, 1=top
     // Bottom: horizon haze (warm light blue), Top: deep sky blue
-    const r = 0.60 + t * (-0.15);
-    const g = 0.75 + t * (-0.10);
-    const b = 0.92 + t * (-0.08);
-    colors[i * 3]     = Math.max(0, Math.min(1, r));
+    const r = 0.6 + t * -0.15;
+    const g = 0.75 + t * -0.1;
+    const b = 0.92 + t * -0.08;
+    colors[i * 3] = Math.max(0, Math.min(1, r));
     colors[i * 3 + 1] = Math.max(0, Math.min(1, g));
     colors[i * 3 + 2] = Math.max(0, Math.min(1, b));
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-  const mat  = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false });
+  const mat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false });
   const dome = new THREE.Mesh(geo, mat);
   dome.name = 'sky';
   scene.add(dome);
 
   // Sun disc
-  const sunGeo  = new THREE.CircleGeometry(22, 24);
-  const sunMat  = new THREE.MeshBasicMaterial({ color: 0xfffae0, fog: false });
+  const sunGeo = new THREE.CircleGeometry(22, 24);
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xfffae0, fog: false });
   const sunDisc = new THREE.Mesh(sunGeo, sunMat);
   sunDisc.position.set(200, 350, -350);
   sunDisc.lookAt(0, 0, 0);

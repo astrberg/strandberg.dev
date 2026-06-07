@@ -34,7 +34,6 @@ export function showMetadata(metadata) {
   rawEl.innerHTML = `<pre class="metadata-json">${raw}</pre>`;
 }
 
-
 export function beginMetadataWait(file) {
   const metaDiv = document.getElementById('metadataDisplay');
   if (metaDiv) {
@@ -52,33 +51,43 @@ export function beginMetadataWait(file) {
     progressText: document.getElementById('progressText'),
     resultText: document.getElementById('resultText'),
     uploadButton: document.getElementById('uploadButton'),
-    videoInput: document.getElementById('videoInput')
+    videoInput: document.getElementById('videoInput'),
   };
 
-  updateProgress(elements.progressBar, elements.progressText, 100, `Waiting for metadata... (${pollInterval/1000}s)`);
+  updateProgress(
+    elements.progressBar,
+    elements.progressText,
+    100,
+    `Waiting for metadata... (${pollInterval / 1000}s)`
+  );
   if (elements.resultText) {
-    elements.resultText.innerHTML = `<span>Waiting for metadata... (${pollInterval/1000}s)</span>`;
+    elements.resultText.innerHTML = `<span>Waiting for metadata... (${pollInterval / 1000}s)</span>`;
   }
 
   setTimeout(pollForMetadata, pollInterval);
 
   async function pollForMetadata() {
     if (!polling) return;
-    
+
     pollAttempts++;
     if (pollAttempts > maxAttempts) {
       showError('✗ Timed out waiting for metadata.');
       return;
     }
-    
-    updateProgress(elements.progressBar, elements.progressText, 100, `Waiting for metadata... (poll ${pollAttempts}/${maxAttempts})`);
+
+    updateProgress(
+      elements.progressBar,
+      elements.progressText,
+      100,
+      `Waiting for metadata... (poll ${pollAttempts}/${maxAttempts})`
+    );
     if (elements.resultText) {
       elements.resultText.innerHTML = `<span>Waiting for metadata... (poll ${pollAttempts}/${maxAttempts})</span>`;
     }
-    
+
     try {
       const response = await fetchMetadata();
-      
+
       if (response.status === 200) {
         await handleSuccess(response);
       } else if (response.status !== 202) {
@@ -101,16 +110,16 @@ export function beginMetadataWait(file) {
     if (MOCK_UPLOAD) {
       return simulateMockPoll(pollAttempts, file);
     }
-    
+
     const token = getIdToken();
     const url = `${SIGNED_URL_ENDPOINT}?filename=${encodeURIComponent(file.name)}`;
     console.info('Fetching metadata for', file.name, 'url=', url);
-    
+
     const response = await fetch(url, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     });
-    
+
     console.info('Received metadata fetch response', response.status, response.statusText);
     return response;
   }
@@ -120,14 +129,14 @@ export function beginMetadataWait(file) {
     if (elements.resultText) elements.resultText.innerHTML = '';
     showMetadata(metadata);
     polling = false;
-    
+
     setTimeout(() => {
       if (elements.videoInput) elements.videoInput.value = '';
       if (elements.uploadButton) elements.uploadButton.disabled = true;
-      
+
       const fileInfo = document.getElementById('fileInfo');
       if (fileInfo) fileInfo.innerHTML = '';
-      
+
       if (elements.progressBar) elements.progressBar.style.width = '0%';
       if (elements.progressText) elements.progressText.textContent = '0%';
     }, RESET_UI_DELAY);
@@ -139,7 +148,10 @@ export function beginMetadataWait(file) {
     }
     polling = false;
     if (elements.uploadButton && elements.videoInput) {
-      elements.uploadButton.disabled = !(elements.videoInput.files.length && (getIdToken() || MOCK_UPLOAD));
+      elements.uploadButton.disabled = !(
+        elements.videoInput.files.length &&
+        (getIdToken() || MOCK_UPLOAD)
+      );
     }
   }
 }

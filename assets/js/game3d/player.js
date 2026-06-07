@@ -3,36 +3,35 @@ import { getHeightAt } from './world.js';
 import { loadGLTF, findClip, cloneModel } from './model-loader.js';
 import { resolveCollisions } from './physics.js';
 
-export const PLAYER_HEIGHT = 1.75;
-export const PLAYER_SPEED  = 8.0;
-export const PLAYER_RUN_MULT = 1.85;
+const PLAYER_HEIGHT = 1.75;
+const PLAYER_SPEED = 8.0;
+const PLAYER_RUN_MULT = 1.85;
 export const MAX_LEVEL = 10;
-
 
 export class Player3D {
   constructor(scene) {
-    this.hp    = 100;
+    this.hp = 100;
     this.maxHp = 100;
-    this.mp    = 100;
+    this.mp = 100;
     this.maxMp = 100;
     this.level = 1;
-    this.xp    = 0;
+    this.xp = 0;
     this.maxXp = 400;
 
     // Exploration and interaction tracking
     this.discoveredZones = [];
-    this.talkedNpcs      = [];
-    this._activeEffects  = [];
+    this.talkedNpcs = [];
+    this._activeEffects = [];
 
-    this._mixer      = null;
+    this._mixer = null;
     this._animations = null;
     this._idleAction = null;
     this._walkAction = null;
-    this._runAction  = null;
-    this._isMoving   = false;
-    this._isRunning  = false;
-    this._scene      = scene;
-    this._boxGroup   = new THREE.Group(); // holds the fallback box mesh children
+    this._runAction = null;
+    this._isMoving = false;
+    this._isRunning = false;
+    this._scene = scene;
+    this._boxGroup = new THREE.Group(); // holds the fallback box mesh children
 
     // The player "body" group — camera is attached above this
     this.group = new THREE.Group();
@@ -57,7 +56,7 @@ export class Player3D {
     // Body
     const bodyGeo = new THREE.CylinderGeometry(0.32, 0.36, 1.6, 8);
     const bodyMat = new THREE.MeshLambertMaterial({ color: 0x3860c0 });
-    const body    = new THREE.Mesh(bodyGeo, bodyMat);
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.y = 0.8;
     body.castShadow = true;
     this._boxGroup.add(body);
@@ -65,7 +64,7 @@ export class Player3D {
     // Head
     const headGeo = new THREE.SphereGeometry(0.35, 10, 8);
     const headMat = new THREE.MeshLambertMaterial({ color: 0xe8b870 });
-    const head    = new THREE.Mesh(headGeo, headMat);
+    const head = new THREE.Mesh(headGeo, headMat);
     head.position.y = 1.88;
     head.castShadow = true;
     this._boxGroup.add(head);
@@ -73,14 +72,14 @@ export class Player3D {
     // Cloak
     const cloakGeo = new THREE.ConeGeometry(0.48, 1.0, 8, 1, true);
     const cloakMat = new THREE.MeshLambertMaterial({ color: 0x1a3880, side: THREE.DoubleSide });
-    const cloak    = new THREE.Mesh(cloakGeo, cloakMat);
+    const cloak = new THREE.Mesh(cloakGeo, cloakMat);
     cloak.position.y = 0.4;
     this._boxGroup.add(cloak);
 
     // Shadow disc
     const sGeo = new THREE.CircleGeometry(0.45, 10);
     const sMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
-    const s    = new THREE.Mesh(sGeo, sMat);
+    const s = new THREE.Mesh(sGeo, sMat);
     s.rotation.x = -Math.PI / 2;
     s.position.y = 0.02;
     this._boxGroup.add(s);
@@ -97,11 +96,15 @@ export class Player3D {
 
     const bbox = new THREE.Box3().setFromObject(model);
     const modelH = bbox.max.y - bbox.min.y;
-    const scale  = PLAYER_HEIGHT / modelH;
+    const scale = PLAYER_HEIGHT / modelH;
     model.scale.setScalar(scale);
     model.position.y = -bbox.min.y * scale;
 
-    model.traverse(c => { if (c.isMesh) { c.castShadow = true; } });
+    model.traverse(c => {
+      if (c.isMesh) {
+        c.castShadow = true;
+      }
+    });
     this.group.add(model);
 
     if (gltf.animations && gltf.animations.length > 0) {
@@ -110,7 +113,7 @@ export class Player3D {
 
       const idleClip = findClip(gltf.animations, 'Idle', 'Unarmed_Idle', 'idle', 'TPose');
       const walkClip = findClip(gltf.animations, 'Walking_A', 'Walking_B', 'Walk', 'Running_A');
-      const runClip  = findClip(gltf.animations, 'Running_A', 'Running_B', 'Run');
+      const runClip = findClip(gltf.animations, 'Running_A', 'Running_B', 'Run');
 
       if (idleClip) {
         this._idleAction = this._mixer.clipAction(idleClip);
@@ -129,7 +132,9 @@ export class Player3D {
     }
   }
 
-  get position() { return this.group.position; }
+  get position() {
+    return this.group.position;
+  }
 
   // ── Action abilities ────────────────────────────────────────────────────────
   _torchLight = null;
@@ -144,7 +149,7 @@ export class Player3D {
           if (dist <= 6.0) {
             // Deduct energy
             this.mp = Math.max(0, this.mp - 25);
-            
+
             const baseDmg = 8 + Math.floor(Math.random() * 6);
             const dmg = Math.floor(baseDmg * levelMult);
             hud.addChat(`Deploy Code hits ${targetNPC.name} for ${dmg} damage!`, 'sys');
@@ -164,7 +169,7 @@ export class Player3D {
           if (dist <= 6.0) {
             // Deduct energy
             this.mp = Math.max(0, this.mp - 40);
-            
+
             const baseDmg = 22 + Math.floor(Math.random() * 10);
             const dmg = Math.floor(baseDmg * levelMult);
             hud.addChat(`Code Review hits ${targetNPC.name} for ${dmg} damage!`, 'sys');
@@ -208,23 +213,23 @@ export class Player3D {
 
   die(hud) {
     hud.addChat('You have died!', 'err');
-    
+
     if (this._mixer) {
       if (this._idleAction) this._idleAction.setEffectiveWeight(0);
       if (this._walkAction) this._walkAction.setEffectiveWeight(0);
-      if (this._runAction)  this._runAction.setEffectiveWeight(0);
+      if (this._runAction) this._runAction.setEffectiveWeight(0);
     }
 
     hud.showDeathScreen(() => {
       hud.hideDeathScreen();
-      
+
       this.group.position.set(0, getHeightAt(0, -45), -45);
       this.hp = this.maxHp;
       this.mp = this.maxMp;
       this.velocityY = 0;
       this.isGrounded = true;
       hud.updatePlayer(this.hp, this.maxHp, this.mp, this.maxMp);
-      
+
       hud.addChat('You have resurrected at Northshire Abbey.', 'sys');
     });
   }
@@ -233,12 +238,12 @@ export class Player3D {
     if (this.hp <= 0) return; // Can't gain XP while dead!
     if (this.level >= MAX_LEVEL) return;
     this.xp += amount;
-    
+
     // Check level up
     while (this.xp >= this.maxXp) {
       this.xp -= this.maxXp;
       this.level++;
-      
+
       if (this.level >= MAX_LEVEL) {
         this.level = MAX_LEVEL;
         this.xp = 0;
@@ -246,43 +251,43 @@ export class Player3D {
       } else {
         this.maxXp = this.level * 400; // Level 1 is 400, Level 2 is 800, etc.
       }
-      
+
       // Flash / heal player on level up!
       this.hp = this.maxHp;
       this.mp = this.maxMp;
-      
+
       // Update UI elements
       hud.updatePlayer(this.hp, this.maxHp, this.mp, this.maxMp);
       hud.updatePlayerLevel(this.level);
-      
+
       hud.addChat(`Congratulations! You have reached Level ${this.level}!`, 'sys');
       if (this.level === MAX_LEVEL) {
         hud.addChat('You have reached the maximum level!', 'sys');
       }
-      
+
       // Flash golden burst on portrait!
       hud.flashLevelUp();
-      
+
       // Trigger the 3D level-up golden light & synthesized chime sound effect!
       this.triggerLevelUpEffect();
-      
+
       if (this.level === MAX_LEVEL) {
         break;
       }
     }
-    
+
     // Update the XP bar in the HUD
     hud.updateXpBar(this.xp, this.maxXp);
-    
+
     // Save progress to cookie (GDPR/CCPA compliant client-side functional cookie)
     this.saveProgress();
   }
 
   loadProgress(hud) {
-    const name = "game_progress=";
+    const name = 'game_progress=';
     const decodedCookie = decodeURIComponent(document.cookie);
     const ca = decodedCookie.split(';');
-    let cookieVal = "";
+    let cookieVal = '';
     for (let i = 0; i < ca.length; i++) {
       let c = ca[i].trim();
       if (c.indexOf(name) === 0) {
@@ -290,7 +295,7 @@ export class Player3D {
         break;
       }
     }
-    
+
     if (cookieVal) {
       try {
         const data = JSON.parse(cookieVal);
@@ -306,10 +311,10 @@ export class Player3D {
         if (data.zones) this.discoveredZones = data.zones;
         if (data.npcs) this.talkedNpcs = data.npcs;
       } catch (e) {
-        console.warn("Failed to parse game progress cookie:", e);
+        console.warn('Failed to parse game progress cookie:', e);
       }
     }
-    
+
     // Sync HUD displays
     hud.updatePlayerLevel(this.level);
     hud.updateXpBar(this.xp, this.maxXp);
@@ -322,7 +327,7 @@ export class Player3D {
       level: this.level,
       xp: this.xp,
       zones: this.discoveredZones,
-      npcs: this.talkedNpcs
+      npcs: this.talkedNpcs,
     })}; path=/; max-age=31536000; SameSite=Strict`;
   }
 
@@ -359,9 +364,9 @@ export class Player3D {
       const gain1 = audioCtx.createGain();
       osc1.type = 'triangle';
       osc1.frequency.setValueAtTime(587.33, now); // D5
-      osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.12); // A5 chime swell
+      osc1.frequency.exponentialRampToValueAtTime(880.0, now + 0.12); // A5 chime swell
       osc1.frequency.exponentialRampToValueAtTime(1174.66, now + 0.35); // D6 octave ring
-      
+
       gain1.gain.setValueAtTime(0.35, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2); // ring out over 1.2s
 
@@ -376,8 +381,8 @@ export class Player3D {
       osc2.type = 'sine';
       osc2.frequency.setValueAtTime(293.66, now); // D4 root chord
       osc2.frequency.setValueAtTime(370.01, now + 0.12); // F#4 major chord
-      osc2.frequency.exponentialRampToValueAtTime(440.00, now + 0.5); // A4 fifth
-      
+      osc2.frequency.exponentialRampToValueAtTime(440.0, now + 0.5); // A4 fifth
+
       gain2.gain.setValueAtTime(0.01, now);
       gain2.gain.linearRampToValueAtTime(0.2, now + 0.25); // swell in
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.8); // fade out warm choir
@@ -387,7 +392,7 @@ export class Player3D {
       osc2.start(now);
       osc2.stop(now + 1.9);
     } catch (e) {
-      console.warn("Web Audio API Level-Up chime play deferred/failed:", e);
+      console.warn('Web Audio API Level-Up chime play deferred/failed:', e);
     }
 
     // 2. 3D Visual Effects Group
@@ -402,7 +407,7 @@ export class Player3D {
       opacity: 0.8,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
-      depthWrite: false
+      depthWrite: false,
     });
     const beam = new THREE.Mesh(beamGeo, beamMat);
     beam.position.set(0, 7.5, 0);
@@ -416,7 +421,7 @@ export class Player3D {
       opacity: 0.9,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
-      depthWrite: false
+      depthWrite: false,
     });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotateX(-Math.PI / 2);
@@ -432,20 +437,24 @@ export class Player3D {
         color: 0xffe680,
         transparent: true,
         opacity: 0.95,
-        blending: THREE.AdditiveBlending
+        blending: THREE.AdditiveBlending,
       });
       const spark = new THREE.Mesh(sparkGeo, sparkMat);
-      
+
       const angle = Math.random() * Math.PI * 2;
       const radius = Math.random() * 1.0;
-      spark.position.set(Math.cos(angle) * radius, 0.1 + Math.random() * 0.5, Math.sin(angle) * radius);
-      
+      spark.position.set(
+        Math.cos(angle) * radius,
+        0.1 + Math.random() * 0.5,
+        Math.sin(angle) * radius
+      );
+
       spark.userData = {
         speedY: 2.5 + Math.random() * 3.5,
         driftX: (Math.random() - 0.5) * 0.6,
         driftZ: (Math.random() - 0.5) * 0.6,
         age: 0,
-        life: 0.8 + Math.random() * 0.8
+        life: 0.8 + Math.random() * 0.8,
       };
       effectGroup.add(spark);
       sparks.push(spark);
@@ -457,7 +466,7 @@ export class Player3D {
       ring,
       sparks,
       elapsed: 0,
-      duration: 1.5
+      duration: 1.5,
     });
   }
 
@@ -494,7 +503,7 @@ export class Player3D {
       if (this._mixer) this._mixer.update(delta);
       return;
     }
-    
+
     // Regenerate energy: 20 Energy per second
     if (this.mp < this.maxMp) {
       this.mp = Math.min(this.maxMp, this.mp + 20.0 * delta);
@@ -502,22 +511,35 @@ export class Player3D {
         hud.updatePlayer(this.hp, this.maxHp, this.mp, this.maxMp);
       }
     }
-    
+
     const prevX = this.group.position.x;
     const prevZ = this.group.position.z;
-    const { forward, back, left, right, running } = inputState;
+    const { forward, back, left, right, running, isDragging } = inputState;
     const speed = PLAYER_SPEED * (running ? PLAYER_RUN_MULT : 1.0) * delta;
 
-    // Movement relative to the camera's horizontal facing
-    const yaw = inputState.cameraYaw;
-
     let mx = 0, mz = 0;
-    if (forward) { mx -= Math.sin(yaw); mz -= Math.cos(yaw); }
-    if (back)    { mx += Math.sin(yaw); mz += Math.cos(yaw); }
-    if (left)    { mx -= Math.sin(yaw + Math.PI / 2); mz -= Math.cos(yaw + Math.PI / 2); }
-    if (right)   { mx -= Math.sin(yaw - Math.PI / 2); mz -= Math.cos(yaw - Math.PI / 2); }
 
+    if (isDragging) {
+      // Mouse steering mode: W/S move along camera direction, A/D strafe sideways
+      const yaw = inputState.cameraYaw;
+      if (forward) { mx -= Math.sin(yaw); mz -= Math.cos(yaw); }
+      if (back)    { mx += Math.sin(yaw); mz += Math.cos(yaw); }
+      if (left)    { mx -= Math.sin(yaw + Math.PI / 2); mz -= Math.cos(yaw + Math.PI / 2); }
+      if (right)   { mx -= Math.sin(yaw - Math.PI / 2); mz -= Math.cos(yaw - Math.PI / 2); }
+    } else {
+      // Keyboard-only mode: A/D rotate character and camera, W/S move relative to character rotation
+      const turnSpeed = 2.5 * delta;
+      if (left)    { this.group.rotation.y += turnSpeed; }
+      if (right)   { this.group.rotation.y -= turnSpeed; }
+
+      if (forward) { mx += Math.sin(this.group.rotation.y); mz += Math.cos(this.group.rotation.y); }
+      if (back)    { mx -= Math.sin(this.group.rotation.y); mz -= Math.cos(this.group.rotation.y); }
+    }
+
+    const wasMoving = this._isMoving;
     const moving = mx !== 0 || mz !== 0;
+    this._isMoving = moving;
+    this._isMovingForwardOrBack = moving && (forward || back);
 
     if (moving) {
       const len = Math.sqrt(mx * mx + mz * mz);
@@ -541,8 +563,10 @@ export class Player3D {
         this.group.position.z = prevZ;
       }
 
-      // Face direction of travel
-      this.group.rotation.y = Math.atan2(mx, mz);
+      // Face direction of travel only when mouse steering (strafing)
+      if (isDragging) {
+        this.group.rotation.y = Math.atan2(mx, mz);
+      }
     }
 
     // Terrain follow and jump/fall physics
@@ -581,15 +605,13 @@ export class Player3D {
 
     // Animation blending
     if (this._mixer) {
-      const wasMoving  = this._isMoving;
       const wasRunning = this._isRunning;
-      this._isMoving  = moving;
       this._isRunning = moving && running;
 
       if (moving !== wasMoving || (moving && running !== wasRunning)) {
         if (this._idleAction) this._idleAction.setEffectiveWeight(moving ? 0 : 1);
         if (this._walkAction) this._walkAction.setEffectiveWeight(moving && !running ? 1 : 0);
-        if (this._runAction)  this._runAction.setEffectiveWeight(moving && running ? 1 : 0);
+        if (this._runAction) this._runAction.setEffectiveWeight(moving && running ? 1 : 0);
         if (moving && !running && !this._runAction && this._walkAction) {
           this._walkAction.setEffectiveWeight(1);
         }
@@ -653,19 +675,19 @@ const HALF_WORLD = 245;
 
 export class ThirdPersonCamera {
   constructor(camera, player) {
-    this.camera  = camera;
-    this.player  = player;
-    this.yaw     = 0;
-    this.pitch   = 0.35;
-    this.dist    = 14;
+    this.camera = camera;
+    this.player = player;
+    this.yaw = 0;
+    this.pitch = 0.35;
+    this.dist = 14;
     this.minDist = 1.5;
     this.maxDist = 45;
     this.minPitch = 0.05;
     this.maxPitch = 1.35;
 
     this._isDragging = false;
-    this._lastMX     = 0;
-    this._lastMY     = 0;
+    this._lastMX = 0;
+    this._lastMY = 0;
 
     // Reusable vector — avoids a heap allocation every frame
     this._lookAt = new THREE.Vector3();
@@ -695,28 +717,56 @@ export class ThirdPersonCamera {
       const dy = e.clientY - this._lastMY;
       this._lastMX = e.clientX;
       this._lastMY = e.clientY;
-      this.yaw   -= dx * 0.006;
+      this.yaw -= dx * 0.006;
       this.pitch += dy * 0.005;
-      this.pitch  = Math.max(this.minPitch, Math.min(this.maxPitch, this.pitch));
+      this.pitch = Math.max(this.minPitch, Math.min(this.maxPitch, this.pitch));
     });
 
-    canvas.addEventListener('wheel', e => {
-      this.dist += e.deltaY * 0.02;
-      this.dist  = Math.max(this.minDist, Math.min(this.maxDist, this.dist));
-      e.preventDefault();
-    }, { passive: false });
+    canvas.addEventListener(
+      'wheel',
+      e => {
+        this.dist += e.deltaY * 0.02;
+        this.dist = Math.max(this.minDist, Math.min(this.maxDist, this.dist));
+        e.preventDefault();
+      },
+      { passive: false }
+    );
 
     canvas.addEventListener('contextmenu', e => e.preventDefault());
   }
 
-  getYaw() { return this.yaw; }
+  getYaw() {
+    return this.yaw;
+  }
 
-  update() {
+  update(inputState, delta) {
     const p = this.player.position;
 
+    // Keyboard turning: rotate camera yaw in sync with player body when not dragging
+    if (inputState && !this._isDragging) {
+      const turnSpeed = 2.5 * delta;
+      if (inputState.left) {
+        this.yaw += turnSpeed;
+      }
+      if (inputState.right) {
+        this.yaw -= turnSpeed;
+      }
+    }
+
+    // Auto-follow: slowly rotate camera behind player when moving forward/back and not dragging
+    if (this.player._isMovingForwardOrBack && !this._isDragging) {
+      const targetYaw = this.player.group.rotation.y + Math.PI;
+      let diff = targetYaw - this.yaw;
+      // Normalize difference to [-PI, PI] to find the shortest rotation direction
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      
+      const lerpSpeed = 0.035; // Adjust this value to make the follow slower or faster
+      this.yaw += diff * lerpSpeed;
+    }
+
     // Camera orbit around player
-    const camX = p.x + Math.sin(this.yaw)   * Math.cos(this.pitch) * this.dist;
-    const camZ = p.z + Math.cos(this.yaw)   * Math.cos(this.pitch) * this.dist;
+    const camX = p.x + Math.sin(this.yaw) * Math.cos(this.pitch) * this.dist;
+    const camZ = p.z + Math.cos(this.yaw) * Math.cos(this.pitch) * this.dist;
     const camY = p.y + PLAYER_HEIGHT + Math.sin(this.pitch) * this.dist;
 
     // Don't go below terrain
