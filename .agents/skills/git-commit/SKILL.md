@@ -11,8 +11,11 @@ This skill defines the instructions and best practices for staging changes in th
 
 When the user asks you to commit changes, follow this systematic workflow:
 
-1. **Stage all changes**:
-   - Run `git add -A` to stage all modifications, new files, and deletions.
+1. **Stage and commit changes**:
+   - If there are only modified/deleted files (no new untracked files), use the combined built-in command:
+     `git commit -am "<message>"`
+   - If there are new untracked files, stage everything and commit:
+     `git add -A && git commit -m "<message>"`
 
 2. **Generate a descriptive commit message**:
    - Adhere to the **Conventional Commits** spec:
@@ -23,8 +26,5 @@ When the user asks you to commit changes, follow this systematic workflow:
      - `style: ...` for layout, styling, or formatting tweaks
    - Keep the subject line concise (under 60 characters) and written in the imperative mood (e.g., "add controls" instead of "added controls").
 
-3. **Commit the changes**:
-   - Run `git commit -m "<message>"` to record the changes.
-
-4. **Verify the commit**:
+3. **Verify the commit**:
    - Run `git log -n 1` or `git status` to verify the commit succeeded.
