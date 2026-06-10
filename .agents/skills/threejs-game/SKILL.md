@@ -21,6 +21,7 @@ Before making any changes to the 3D client, review this checklist to prevent com
 - [ ] **Distance Pre-checks for Physics**: In physics loops, use squared distance pre-checks (`dx * dx + dz * dz < minDist * minDist`) before calculating square roots (`Math.sqrt()`). This avoids wasting CPU cycles.
 - [ ] **Enforce MAX_LEVEL = 10 Cap**: Clamp player leveling and experience at Level 10. Once reached, show 'Level Cap Reached' on the XP bar, append the `(Elite)` suffix to the player level text, add the `.elite-frame` class, and do not print or award further experience points.
 - [ ] **Energy Costs & Passive Recovery**: Ensure attacks (`deploy` costs 25 Energy, `review` costs 40 Energy) check the player's energy pool, abort with 'Not enough energy!' if insufficient, and recover energy passively at 20 Energy/second. Coffee is free of energy cost (cooldown-only).
+- [ ] **Mobile Touch Steer & Drag Safety**: Prevent page scrolling/bouncing when dragging the virtual joystick or camera viewport on mobile by calling `e.preventDefault()` inside touch handlers with `{ passive: false }`. Always stop touch propagation on buttons/controls to prevent unintended raycast targeting.
 
 ---
 
@@ -213,3 +214,12 @@ To align with traditional WoW rogue-like mechanics, the game enforces resource c
 *   **Regeneration**:
     *   Regenerate energy passively at a rapid rate of **20 Energy per second** during the update loop: `this.mp = Math.min(this.maxMp, this.mp + 20.0 * delta)`.
     *   Update the HUD using `hud.updatePlayer()` to reflect the new energy bar fill.
+
+### 15. Mobile Responsiveness & Touch Controls
+
+When maintaining or extending touch support and mobile HUD layouts:
+*   **Virtual Joystick Positioning**: Keep the virtual joystick positioned to the left of the centered action bar inside the centered wrapper `#action-bar-wrapper`. Use absolute offsets (`right: calc(100% + 15px)`) so that it does not push the centered action bar off-center.
+*   **Dynamic maxRadius**: Always calculate the joystick's maximum displacement (`maxRadius`) dynamically based on its rendered base size (e.g., `rect.width * 0.4`), and cache it inside the touchstart state to avoid layout thrashing during touchmove updates.
+*   **Camera Touch & Pinch Zoom**: Track single-touch moves to update camera `yaw` and `pitch` using `e.preventDefault()` to block browser bounce. Track two-touch coordinates to calculate distances for pinch-to-zoom updates.
+*   **Tap-to-Target & Empty Space Clearing**: Differentiate between drag looks and clicks by using a tap-threshold (moved < 10px and duration < 300ms). Tap-to-target should trigger NPC raycasting, whereas tapping on empty ground/sky should clear the current target.
+*   **Soft Keyboard Integration**: Enable chat overlay clicks on mobile to programmatically focus and show the text input field, triggering the device's native software keyboard.
