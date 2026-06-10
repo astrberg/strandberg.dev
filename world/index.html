@@ -2,135 +2,170 @@
 layout: null
 title: World of Strandberg — Solna Campus
 ---
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>World of Strandberg — Solna Campus</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link href="/assets/css/game.css" rel="stylesheet">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World of Strandberg — Solna Campus</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="/assets/css/game.css" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- Three.js renderer mounts here -->
+    <div id="renderer-container"></div>
 
-  <!-- Three.js renderer mounts here -->
-  <div id="renderer-container"></div>
+    <!-- ── WoW-style HUD ─────────────────────────────────────── -->
+    <div id="hud">
+      <!-- Zone name flash -->
+      <div id="zone-name">
+        <span id="zone-text"></span>
+        <span id="zone-sub">Solna Business Park</span>
+      </div>
 
-  <!-- ── WoW-style HUD ─────────────────────────────────────── -->
-  <div id="hud">
-
-    <!-- Zone name flash -->
-    <div id="zone-name">
-      <span id="zone-text"></span>
-      <span id="zone-sub">Solna Business Park</span>
-    </div>
-
-    <!-- Player unit frame (top-left) -->
-    <div id="player-frame" class="unit-frame">
-      <div class="unit-portrait class-warrior" id="player-portrait">🛡️</div>
-      <div class="unit-bars">
-        <div class="bar-row">
-          <div id="player-hp-bar" class="bar hp-bar"><div id="player-hp-fill" class="bar-fill"></div></div>
-          <span id="player-hp-text" class="bar-text">100 / 100</span>
+      <!-- Player unit frame (top-left) -->
+      <div id="player-frame" class="unit-frame">
+        <div class="unit-portrait class-warrior" id="player-portrait">🛡️</div>
+        <div class="unit-bars">
+          <div class="bar-row">
+            <div id="player-hp-bar" class="bar hp-bar">
+              <div id="player-hp-fill" class="bar-fill"></div>
+            </div>
+            <span id="player-hp-text" class="bar-text">100 / 100</span>
+          </div>
+          <div class="bar-row">
+            <div id="player-mp-bar" class="bar mp-bar">
+              <div id="player-mp-fill" class="bar-fill mp-fill"></div>
+            </div>
+            <span id="player-mp-text" class="bar-text">100 / 100</span>
+          </div>
         </div>
-        <div class="bar-row">
-          <div id="player-mp-bar" class="bar mp-bar"><div id="player-mp-fill" class="bar-fill mp-fill"></div></div>
-          <span id="player-mp-text" class="bar-text">100 / 100</span>
+        <span class="unit-name">Engineer</span>
+        <span class="unit-level" id="player-level">Lv 1</span>
+      </div>
+
+      <!-- Target frame (top-left, below player) -->
+      <div id="target-frame" class="unit-frame hidden">
+        <div class="unit-portrait" id="target-portrait">?</div>
+        <div class="unit-bars">
+          <div class="bar-row">
+            <div id="target-hp-bar" class="bar hp-bar">
+              <div id="target-hp-fill" class="bar-fill"></div>
+            </div>
+            <span id="target-hp-text" class="bar-text"></span>
+          </div>
+        </div>
+        <span class="unit-name" id="target-name"></span>
+        <span class="unit-level" id="target-level"></span>
+      </div>
+
+      <!-- Minimap (top-right) -->
+      <div id="minimap-container">
+        <canvas id="minimap-canvas" width="140" height="140"></canvas>
+        <div id="minimap-label">Solna Campus</div>
+      </div>
+
+      <!-- Chat / dialogue box (bottom-left) -->
+      <div id="chat-box">
+        <div id="chat-messages"></div>
+        <input
+          type="text"
+          id="chat-input"
+          class="hidden"
+          placeholder="Press Enter to send..."
+          maxlength="80"
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- Action bar (bottom-center) -->
+      <div id="action-bar-wrapper">
+        <!-- Virtual Joystick (shown only on mobile) -->
+        <div id="joystick-container" class="hidden">
+          <div id="joystick-base">
+            <div id="joystick-knob"></div>
+          </div>
+        </div>
+
+        <div id="action-bar">
+          <!-- Experience Bar -->
+          <div id="xp-bar-container">
+            <div id="xp-bar-fill"></div>
+            <span id="xp-bar-text">XP: 0 / 400</span>
+          </div>
+          <div class="action-bar-bg">
+            <div class="slot-row" id="action-slots"></div>
+          </div>
         </div>
       </div>
-      <span class="unit-name">Engineer</span>
-      <span class="unit-level" id="player-level">Lv 1</span>
-    </div>
 
-    <!-- Target frame (top-left, below player) -->
-    <div id="target-frame" class="unit-frame hidden">
-      <div class="unit-portrait" id="target-portrait">?</div>
-      <div class="unit-bars">
-        <div class="bar-row">
-          <div id="target-hp-bar" class="bar hp-bar"><div id="target-hp-fill" class="bar-fill"></div></div>
-          <span id="target-hp-text" class="bar-text"></span>
+      <!-- Interact prompt -->
+      <div id="interact-prompt" class="hidden">Press <kbd>E</kbd> to speak</div>
+
+      <!-- Controls hint -->
+      <div id="controls-hint">
+        WASD · Move &nbsp;|&nbsp; Mouse · Look &nbsp;|&nbsp; E · Talk &nbsp;|&nbsp; Scroll · Zoom
+      </div>
+
+      <!-- Death Screen Overlay & Dialog -->
+      <div id="death-overlay" class="hidden">
+        <!-- Cinematic "YOU DIED" Banner -->
+        <div id="death-banner">
+          <div id="death-banner-title">YOU DIED</div>
+          <div id="death-banner-subtitle">
+            Spirit severed. Release to return to Northshire Abbey.
+          </div>
+        </div>
+
+        <!-- WoW-style release prompt -->
+        <div id="death-dialog">
+          <h2>Release Spirit?</h2>
+          <p>Release your spirit to return to the nearest graveyard (Northshire Abbey).</p>
+          <button id="btn-release">Release Spirit</button>
         </div>
       </div>
-      <span class="unit-name" id="target-name"></span>
-      <span class="unit-level" id="target-level"></span>
-    </div>
 
-    <!-- Minimap (top-right) -->
-    <div id="minimap-container">
-      <canvas id="minimap-canvas" width="140" height="140"></canvas>
-      <div id="minimap-label">Solna Campus</div>
-    </div>
+      <!-- Container for floating projected speech bubbles -->
+      <div id="speech-bubbles-container"></div>
 
-    <!-- Chat / dialogue box (bottom-left) -->
-    <div id="chat-box">
-      <div id="chat-messages"></div>
-      <input type="text" id="chat-input" class="hidden" placeholder="Press Enter to send..." maxlength="80" autocomplete="off" />
-    </div>
-
-    <!-- Action bar (bottom-center) -->
-    <div id="action-bar">
-      <!-- Experience Bar -->
-      <div id="xp-bar-container">
-        <div id="xp-bar-fill"></div>
-        <span id="xp-bar-text">XP: 0 / 400</span>
-      </div>
-      <div class="action-bar-bg">
-        <div class="slot-row" id="action-slots"></div>
+      <!-- Mobile Controls (only shown on touch devices) -->
+      <div id="mobile-controls" class="hidden">
+        <!-- Right-side action buttons -->
+        <div id="mobile-buttons">
+          <button id="btn-mobile-jump" class="mobile-btn">⤊</button>
+          <button id="btn-mobile-interact" class="mobile-btn">💬</button>
+          <button id="btn-mobile-run" class="mobile-btn">🏃</button>
+        </div>
       </div>
     </div>
+    <!-- #hud -->
 
-    <!-- Interact prompt -->
-    <div id="interact-prompt" class="hidden">Press <kbd>E</kbd> to speak</div>
+    <!-- Dialogue popup -->
+    <div id="dialogue-box" class="hidden">
+      <div id="dialogue-npc-name"></div>
+      <div id="dialogue-text"></div>
+      <button id="dialogue-close">Close</button>
+    </div>
 
-    <!-- Controls hint -->
-    <div id="controls-hint">WASD · Move &nbsp;|&nbsp; Mouse · Look &nbsp;|&nbsp; E · Talk &nbsp;|&nbsp; Scroll · Zoom</div>
-
-    <!-- Death Screen Overlay & Dialog -->
-    <div id="death-overlay" class="hidden">
-      <!-- Cinematic "YOU DIED" Banner -->
-      <div id="death-banner">
-        <div id="death-banner-title">YOU DIED</div>
-        <div id="death-banner-subtitle">Spirit severed. Release to return to Northshire Abbey.</div>
-      </div>
-
-      <!-- WoW-style release prompt -->
-      <div id="death-dialog">
-        <h2>Release Spirit?</h2>
-        <p>Release your spirit to return to the nearest graveyard (Northshire Abbey).</p>
-        <button id="btn-release">Release Spirit</button>
+    <!-- Loading screen -->
+    <div id="loading-screen">
+      <div id="loading-content">
+        <div id="loading-title">The Citadel</div>
+        <div id="loading-sub">Solna Business Park</div>
+        <div id="loading-bar-track"><div id="loading-bar-fill"></div></div>
+        <div id="loading-tip">"Where code meets capital."</div>
       </div>
     </div>
 
-    <!-- Container for floating projected speech bubbles -->
-    <div id="speech-bubbles-container"></div>
-
-  </div><!-- #hud -->
-
-  <!-- Dialogue popup -->
-  <div id="dialogue-box" class="hidden">
-    <div id="dialogue-npc-name"></div>
-    <div id="dialogue-text"></div>
-    <button id="dialogue-close">Close</button>
-  </div>
-
-  <!-- Loading screen -->
-  <div id="loading-screen">
-    <div id="loading-content">
-      <div id="loading-title">The Citadel</div>
-      <div id="loading-sub">Solna Business Park</div>
-      <div id="loading-bar-track"><div id="loading-bar-fill"></div></div>
-      <div id="loading-tip">"Where code meets capital."</div>
-    </div>
-  </div>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
-    }
-  }
-  </script>
-  <script type="module" src="/assets/js/game3d/main.js"></script>
-</body>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="/assets/js/game3d/main.js"></script>
+  </body>
 </html>

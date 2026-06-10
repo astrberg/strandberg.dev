@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { input } from './input.js';
 
 // ── WoW-style HUD manager ─────────────────────────────────────────────────────
 // All manipulation is via the DOM elements defined in world/index.html.
@@ -6,66 +7,66 @@ import * as THREE from 'three';
 export class HUD3D {
   constructor() {
     this._bubblesContainer = document.getElementById('speech-bubbles-container');
-    this._activeBubbles    = [];
+    this._activeBubbles = [];
 
     // Zone
-    this._zoneEl    = document.getElementById('zone-name');
-    this._zoneText  = document.getElementById('zone-text');
-    this._zoneSub   = document.getElementById('zone-sub');
+    this._zoneEl = document.getElementById('zone-name');
+    this._zoneText = document.getElementById('zone-text');
+    this._zoneSub = document.getElementById('zone-sub');
     this._zoneTimer = 0;
 
     // HP / MP bars
-    this._hpFill  = document.getElementById('player-hp-fill');
-    this._hpText  = document.getElementById('player-hp-text');
-    this._mpFill  = document.getElementById('player-mp-fill');
-    this._mpText  = document.getElementById('player-mp-text');
+    this._hpFill = document.getElementById('player-hp-fill');
+    this._hpText = document.getElementById('player-hp-text');
+    this._mpFill = document.getElementById('player-mp-fill');
+    this._mpText = document.getElementById('player-mp-text');
 
     // Player portrait and level
     this._playerPortrait = document.getElementById('player-portrait');
-    this._playerLevel    = document.getElementById('player-level');
+    this._playerLevel = document.getElementById('player-level');
 
     // XP bar
     this._xpFill = document.getElementById('xp-bar-fill');
     this._xpText = document.getElementById('xp-bar-text');
 
     // Target frame
-    this._targetFrame   = document.getElementById('target-frame');
-    this._targetName    = document.getElementById('target-name');
-    this._targetLevel   = document.getElementById('target-level');
+    this._targetFrame = document.getElementById('target-frame');
+    this._targetName = document.getElementById('target-name');
+    this._targetLevel = document.getElementById('target-level');
     this._targetPortrait = document.getElementById('target-portrait');
-    this._targetHpFill  = document.getElementById('target-hp-fill');
-    this._targetHpText  = document.getElementById('target-hp-text');
+    this._targetHpFill = document.getElementById('target-hp-fill');
+    this._targetHpText = document.getElementById('target-hp-text');
 
     // Chat
-    this._chatEl  = document.getElementById('chat-messages');
+    this._chatEl = document.getElementById('chat-messages');
     this._chatInput = document.getElementById('chat-input');
 
     // Interact prompt
     this._interactEl = document.getElementById('interact-prompt');
 
     // Dialogue
-    this._dialogueBox  = document.getElementById('dialogue-box');
+    this._dialogueBox = document.getElementById('dialogue-box');
     this._dialogueName = document.getElementById('dialogue-npc-name');
     this._dialogueText = document.getElementById('dialogue-text');
     document.getElementById('dialogue-close').addEventListener('click', () => this.closeDialogue());
 
     // Loading
     this._loadingScreen = document.getElementById('loading-screen');
-    this._loadingFill   = document.getElementById('loading-bar-fill');
+    this._loadingFill = document.getElementById('loading-bar-fill');
 
     // Minimap
-    this._miniCanvas   = document.getElementById('minimap-canvas');
-    this._miniCtx      = this._miniCanvas.getContext('2d');
+    this._miniCanvas = document.getElementById('minimap-canvas');
+    this._miniCtx = this._miniCanvas.getContext('2d');
     // Offscreen canvas holds the static minimap background (road, river, abbey)
     // so drawMinimap() only needs to re-draw the dynamic player/NPC dots each frame
-    this._minimapBg    = null;
+    this._minimapBg = null;
 
     this._buildActionBar();
     this._zoneTimer = 0;
 
     // Death screen
     this._deathOverlay = document.getElementById('death-overlay');
-    this._btnRelease   = document.getElementById('btn-release');
+    this._btnRelease = document.getElementById('btn-release');
     this._onReleaseCallback = null;
     this._btnRelease.addEventListener('click', () => {
       if (this._onReleaseCallback) this._onReleaseCallback();
@@ -92,6 +93,14 @@ export class HUD3D {
         }
       }
     });
+
+    // Tap chat messages container on mobile to open chat input
+    this._chatEl.addEventListener('click', () => {
+      const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      if (isMobile && !this.isChatInputActive) {
+        this.showChatInput();
+      }
+    });
   }
 
   // ── Loading bar ────────────────────────────────────────────────────────────
@@ -101,13 +110,15 @@ export class HUD3D {
 
   hideLoading() {
     this._loadingScreen.classList.add('fade-out');
-    setTimeout(() => { this._loadingScreen.style.display = 'none'; }, 1100);
+    setTimeout(() => {
+      this._loadingScreen.style.display = 'none';
+    }, 1100);
   }
 
   // ── Zone popup ─────────────────────────────────────────────────────────────
   showZone(name, subName = 'Solna Business Park') {
     this._zoneText.textContent = name;
-    this._zoneSub.textContent  = subName;
+    this._zoneSub.textContent = subName;
     this._zoneEl.classList.add('visible');
     clearTimeout(this._zoneTimeout);
     this._zoneTimeout = setTimeout(() => this._zoneEl.classList.remove('visible'), 4200);
@@ -130,17 +141,17 @@ export class HUD3D {
       return;
     }
     this._targetFrame.classList.remove('hidden');
-    this._targetName.textContent    = npcDef.def.name;
-    this._targetLevel.textContent   = `Lv ${npcDef.def.level}`;
-    
+    this._targetName.textContent = npcDef.def.name;
+    this._targetLevel.textContent = `Lv ${npcDef.def.level}`;
+
     // Dynamically assign target class color and avatar icon
     const classMap = {
-      'head_of_engineering': { icon: '⚔️', bg: 'class-warrior' },     // Smith Argus
-      'the_barista':         { icon: '🍻', bg: 'class-barbarian' },   // Innkeeper Farley
-      'the_scrum_master':    { icon: '🔮', bg: 'class-mage' },        // Agile Coach
-      'legacy_bug':          { icon: '🐛', bg: 'class-hostile' },     // Kobold
-      'devops_lead':         { icon: '🛡️', bg: 'class-warrior' },     // Marshal Dughan
-      'data_analyst':        { icon: '🧪', bg: 'class-rogue' },       // William Pestle
+      head_of_engineering: { icon: '⚔️', bg: 'class-warrior' }, // Smith Argus
+      the_barista: { icon: '🍻', bg: 'class-barbarian' }, // Innkeeper Farley
+      the_scrum_master: { icon: '🔮', bg: 'class-mage' }, // Agile Coach
+      legacy_bug: { icon: '🐛', bg: 'class-hostile' }, // Kobold
+      devops_lead: { icon: '🛡️', bg: 'class-warrior' }, // Marshal Dughan
+      data_analyst: { icon: '🧪', bg: 'class-rogue' }, // William Pestle
     };
     const lookupId = npcDef.def.id.startsWith('legacy_bug') ? 'legacy_bug' : npcDef.def.id;
     const cfg = classMap[lookupId] || { icon: '?', bg: 'class-generic' };
@@ -159,7 +170,9 @@ export class HUD3D {
   // ── Interact prompt ───────────────────────────────────────────────────────
   showInteractPrompt(show, isHostile = false) {
     if (show) {
-      this._interactEl.innerHTML = isHostile ? 'Press <kbd>E</kbd> to attack' : 'Press <kbd>E</kbd> to speak';
+      this._interactEl.innerHTML = isHostile
+        ? 'Press <kbd>E</kbd> to attack'
+        : 'Press <kbd>E</kbd> to speak';
       this._interactEl.classList.remove('hidden');
     } else {
       this._interactEl.classList.add('hidden');
@@ -269,7 +282,10 @@ export class HUD3D {
     } else if (lower.startsWith('/dance')) {
       this.addChat('You bust out some moves in the middle of Goldshire!', 'sys');
     } else if (lower.startsWith('/who')) {
-      this.addChat('Zone: Elwynn Forest (6 players online: Farley, Argus, Dughan, Pestle, Kobold, You)', 'sys');
+      this.addChat(
+        'Zone: Elwynn Forest (6 players online: Farley, Argus, Dughan, Pestle, Kobold, You)',
+        'sys'
+      );
     } else if (lower.startsWith('/levelup')) {
       if (this.player) {
         if (this.player.level < 10) {
@@ -346,7 +362,7 @@ export class HUD3D {
         // Map to screen pixel coordinates
         const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
         const y = (tempV.y * -0.5 + 0.5) * window.innerHeight;
-        
+
         b.el.style.display = 'block';
         b.el.style.left = `${x}px`;
         b.el.style.top = `${y}px`;
@@ -364,14 +380,14 @@ export class HUD3D {
     const H = this._miniCanvas.height;
     const HALF = 245;
 
-    const bg  = document.createElement('canvas');
-    bg.width  = W;
+    const bg = document.createElement('canvas');
+    bg.width = W;
     bg.height = H;
     const ctx = bg.getContext('2d');
 
     const toMM = (wx, wz) => ({
-      x: (wx / HALF * 0.5 + 0.5) * W,
-      y: (wz / HALF * 0.5 + 0.5) * H,
+      x: ((wx / HALF) * 0.5 + 0.5) * W,
+      y: ((wz / HALF) * 0.5 + 0.5) * H,
     });
 
     // Background circle
@@ -389,7 +405,7 @@ export class HUD3D {
     // 1. Roads (tan lines)
     ctx.strokeStyle = '#7a6a48';
     ctx.lineWidth = 4;
-    
+
     // North-South road
     ctx.beginPath();
     const nsStart = toMM(0, -55);
@@ -451,7 +467,7 @@ export class HUD3D {
 
     // Border ring
     ctx.strokeStyle = '#7a6020';
-    ctx.lineWidth   = 2;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(W / 2, H / 2, W / 2 - 1, 0, Math.PI * 2);
     ctx.stroke();
@@ -463,9 +479,9 @@ export class HUD3D {
    *  the dynamic player and NPC dots on top. Far cheaper than a full redraw.
    */
   drawMinimap(playerPos, npcs) {
-    const ctx  = this._miniCtx;
-    const W    = this._miniCanvas.width;
-    const H    = this._miniCanvas.height;
+    const ctx = this._miniCtx;
+    const W = this._miniCanvas.width;
+    const H = this._miniCanvas.height;
     const HALF = 245;
 
     // Blit the pre-rendered static background
@@ -479,8 +495,8 @@ export class HUD3D {
 
     // World → minimap coords
     const toMM = (wx, wz) => ({
-      x: (wx / HALF * 0.5 + 0.5) * W,
-      y: (wz / HALF * 0.5 + 0.5) * H,
+      x: ((wx / HALF) * 0.5 + 0.5) * W,
+      y: ((wz / HALF) * 0.5 + 0.5) * H,
     });
 
     // NPC dots
@@ -505,16 +521,16 @@ export class HUD3D {
   // ── Action bar ────────────────────────────────────────────────────────────
 
   static ACTIONS = [
-    { id: 'deploy',  icon: '⚡', name: 'Deploy Code',    cd: 1.5, type: 'combat', energy: 25 },
-    { id: 'review',  icon: '🔍', name: 'Code Review',   cd: 8,   type: 'combat', energy: 40 },
-    { id: 'coffee',  icon: '☕', name: 'Coffee Break',  cd: 6,   type: 'spell',  energy: 0  },
-    { id: 'monitor', icon: '🖥', name: 'Toggle Monitor',cd: 0.5, type: 'utility', energy: 0  },
+    { id: 'deploy', icon: '⚡', name: 'Deploy Code', cd: 1.5, type: 'combat', energy: 25 },
+    { id: 'review', icon: '🔍', name: 'Code Review', cd: 8, type: 'combat', energy: 40 },
+    { id: 'coffee', icon: '☕', name: 'Coffee Break', cd: 6, type: 'spell', energy: 0 },
+    { id: 'monitor', icon: '🖥', name: 'Toggle Monitor', cd: 0.5, type: 'utility', energy: 0 },
   ];
 
   _buildActionBar() {
     const slotsEl = document.getElementById('action-slots');
     slotsEl.innerHTML = '';
-    this._slotEls  = [];
+    this._slotEls = [];
     this._cooldowns = new Array(HUD3D.ACTIONS.length).fill(0);
 
     HUD3D.ACTIONS.forEach((action, i) => {
@@ -541,7 +557,9 @@ export class HUD3D {
       slot.appendChild(cdText);
       slot.appendChild(keySpan);
 
-      slot.addEventListener('click', () => this.triggerAction(i));
+      slot.addEventListener('click', () => {
+        input.actionSlot = i + 1;
+      });
       slotsEl.appendChild(slot);
       this._slotEls.push({ slot, cdOverlay, cdText });
     });
@@ -568,7 +586,7 @@ export class HUD3D {
         this._cooldowns[i] = Math.max(0, this._cooldowns[i] - delta);
         const action = HUD3D.ACTIONS[i];
         const pct = this._cooldowns[i] / action.cd;
-        el.cdOverlay.style.height = (pct * 100) + '%';
+        el.cdOverlay.style.height = pct * 100 + '%';
         el.cdText.textContent = this._cooldowns[i] > 0 ? this._cooldowns[i].toFixed(1) : '';
         el.slot.classList.toggle('on-cooldown', this._cooldowns[i] > 0);
       } else {

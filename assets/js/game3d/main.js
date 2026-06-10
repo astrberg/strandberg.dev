@@ -12,7 +12,7 @@ import { buildForest, buildRiver, loadEnvironmentModels } from './environment.js
 import { createNPCs } from './npcs.js';
 import { Player3D, ThirdPersonCamera } from './player.js';
 import { HUD3D } from './hud.js';
-import { input } from './input.js';
+import { input, initMobileControls } from './input.js';
 import { clearColliders } from './physics.js';
 
 // ── Renderer setup ────────────────────────────────────────────────────────────
@@ -113,6 +113,10 @@ function getZone(px, pz) {
   const camCtrl = new ThirdPersonCamera(camera, player);
   const npcs = createNPCs(scene);
 
+  // Initialize mobile controls if on touch device
+  initMobileControls();
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
   // Link player reference to HUD for speech bubbles
   hud.player = player;
 
@@ -145,12 +149,11 @@ function getZone(px, pz) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
-  window.addEventListener('mousedown', e => {
-    if (e.button !== 0) return; // Only left click
+  const handleTargeting = (clientX, clientY) => {
     if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
 
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    mouse.x = (clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
 
@@ -170,7 +173,60 @@ function getZone(px, pz) {
         curr = curr.parent;
       }
     }
+
+    // Clear target if clicked/tapped on empty space
+    targetNPC = null;
+    hud.setTarget(null);
+  };
+
+  window.addEventListener('mousedown', e => {
+    if (e.button !== 0) return; // Only left click
+    handleTargeting(e.clientX, e.clientY);
   });
+
+  // Touch-based targeting for mobile
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+
+  window.addEventListener(
+    'touchstart',
+    e => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = performance.now();
+      }
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    'touchend',
+    e => {
+      if (e.changedTouches.length === 1) {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const duration = performance.now() - touchStartTime;
+
+        // Tap if touch moved very little and touch duration was short (< 300ms)
+        if (dist < 10 && duration < 300) {
+          const target = e.target;
+          // Ignore targeting if tapping on joystick, action buttons, dialogues, etc.
+          if (
+            target.closest('#mobile-controls') ||
+            target.closest('#hud') ||
+            target.closest('#dialogue-box')
+          ) {
+            return;
+          }
+          handleTargeting(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        }
+      }
+    },
+    { passive: true }
+  );
 
   // Tab (cycle target) and Escape (clear target) key handlers
   let tabIndex = 0;
@@ -205,7 +261,7 @@ function getZone(px, pz) {
     const delta = Math.min(clock.getDelta(), 0.1);
 
     input.cameraYaw = camCtrl.getYaw();
-    input.isDragging = camCtrl._isDragging;
+    input.isDragging = camCtrl._isDragging || isMobile;
 
     player.update(input, delta, hud);
     camCtrl.update(input, delta);

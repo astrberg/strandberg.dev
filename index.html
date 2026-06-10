@@ -1,20 +1,19 @@
 ---
 layout: null
 ---
+
 <!doctype html>
 <html lang="en">
   <head>
     {% seo %}
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link href="/assets/css/login.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="/assets/css/login.css" rel="stylesheet" />
   </head>
   <body>
-
     <!-- Three.js canvas injected by login.js as #bg-canvas -->
 
     <div id="login-screen">
-
       <div id="logo-container">
         <div id="title-world-of">WORLD OF</div>
         <div id="title-warcraft">STRANDBERG</div>
@@ -43,20 +42,19 @@ layout: null
           <a href="/resume/">&#x269C; About Aron</a>
         </div>
       </div>
-
-    </div><!-- #login-screen -->
+    </div>
+    <!-- #login-screen -->
 
     <div id="version-text">Version 1.13.7 (40617)</div>
     <div id="fade-overlay"></div>
 
     <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+        }
       }
-    }
     </script>
     <script type="module" src="/assets/js/login.js"></script>
-
   </body>
 </html>

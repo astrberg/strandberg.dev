@@ -6,39 +6,45 @@
   --text-muted: #8a8070;
   --text-light: #a09880;
   --bg-dark: #0e0e14;
-  --bg-surface: rgba(8,12,26,0.97);
+  --bg-surface: rgba(8, 12, 26, 0.97);
   --border-color: #2e2010;
   --border-accent: #6a4a14;
-  --mock-bg: rgba(60,40,0,0.25);
+  --mock-bg: rgba(60, 40, 0, 0.25);
   --mock-border: #7a5a10;
   --mock-text: #e0b840;
-  --live-bg: rgba(30,60,20,0.25);
+  --live-bg: rgba(30, 60, 20, 0.25);
   --live-border: #4a7a30;
   --live-text: #80c880;
   --debug-red: #ff3b30;
 }
 
 /* Override the me.html base layout styles */
-html, body {
+html,
+body {
   background: #03050e !important;
   color: #d0c8a8;
   font-family: 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
 }
-#main { background: none; }
-#content { max-width: 800px; margin: 0 auto; }
+#main {
+  background: none;
+}
+#content {
+  max-width: 800px;
+  margin: 0 auto;
+}
 #content > h1 {
   color: #f0d060;
   text-align: center;
   letter-spacing: 4px;
   text-transform: uppercase;
   font-size: 1.4rem;
-  text-shadow: 0 0 18px rgba(200,140,0,0.4);
+  text-shadow: 0 0 18px rgba(200, 140, 0, 0.4);
   margin-bottom: 0;
 }
 
 #metadataDisplay {
   margin-top: 1em;
-  background: rgba(20,16,4,0.6);
+  background: rgba(20, 16, 4, 0.6);
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--primary-color);
   padding: 1em;
@@ -46,8 +52,8 @@ html, body {
   color: #d0c8a8;
 }
 
-.hidden { 
-  display: none !important; 
+.hidden {
+  display: none !important;
 }
 .metadata {
   margin-top: 0;
@@ -86,7 +92,9 @@ html, body {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-top: 1px solid var(--border-accent);
-  box-shadow: 0 0 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(210,160,40,0.06);
+  box-shadow:
+    0 0 60px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(210, 160, 40, 0.06);
   border-radius: 3px;
   box-sizing: border-box;
 }
@@ -126,15 +134,15 @@ html, body {
   padding: 0.6em 0.75em;
   font: inherit;
   font-size: 1em;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   color: #d0c8a8;
   border-radius: 2px;
 }
 
-#upload-form input[type="file"] {
+#upload-form input[type='file'] {
   cursor: pointer;
 }
-#upload-form input[type="file"]::file-selector-button {
+#upload-form input[type='file']::file-selector-button {
   background: linear-gradient(180deg, #3a2800, #1e1600);
   border: 1px solid #5a4018;
   color: #f0d060;
@@ -156,7 +164,9 @@ html, body {
   font-weight: bold;
   letter-spacing: 3px;
   text-transform: uppercase;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 #uploadButton:hover:not(:disabled) {
@@ -165,7 +175,7 @@ html, body {
 }
 
 #uploadButton:disabled {
-  background: rgba(30,25,10,0.6);
+  background: rgba(30, 25, 10, 0.6);
   cursor: not-allowed;
   color: #4a4030;
   border-color: #2a2010;
@@ -177,7 +187,7 @@ html, body {
 
 #progress {
   height: 1em;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--border-color);
   border-radius: 3px;
   overflow: hidden;
@@ -193,7 +203,7 @@ html, body {
 
 #result {
   min-height: 2.5em;
-  background-color: rgba(20,16,4,0.5);
+  background-color: rgba(20, 16, 4, 0.5);
   border-left: 3px solid var(--primary-color);
   padding: 0.75em 1em;
   color: #d0c8a8;
@@ -222,7 +232,7 @@ html, body {
 }
 
 #bannerSignout {
-  background: rgba(30,25,10,0.5);
+  background: rgba(30, 25, 10, 0.5);
   border: 1px solid var(--border-color);
   color: #d0c8a8;
   padding: 0.4em 1em;
@@ -230,11 +240,13 @@ html, body {
   cursor: pointer;
   font-size: 0.9em;
   margin-left: 1em;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 #bannerSignout:hover {
-  background: rgba(160,40,40,0.4);
+  background: rgba(160, 40, 40, 0.4);
   color: #ff8080;
   border-color: #a04040;
 }
@@ -249,7 +261,9 @@ html, body {
   font-weight: bold;
   letter-spacing: 1px;
   border-radius: 2px;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 #downloadLink:hover {

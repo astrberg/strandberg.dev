@@ -12,7 +12,13 @@
   --link-hover: #a8d0ee;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 html {
   font-size: 16px;
@@ -22,7 +28,15 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   line-height: 1.65;
   padding: 0;
 }
@@ -39,7 +53,9 @@ body {
   z-index: 100;
   transition: color 0.15s;
 }
-.back-link:hover { color: var(--accent); }
+.back-link:hover {
+  color: var(--accent);
+}
 
 /* ── Main resume container ── */
 .resume {
@@ -80,7 +96,9 @@ body {
   font-size: 0.85rem;
   transition: color 0.15s;
 }
-.contact-links a:hover { color: var(--link-hover); }
+.contact-links a:hover {
+  color: var(--link-hover);
+}
 
 /* ── Section headings ── */
 .resume h2 {
@@ -124,7 +142,9 @@ body {
   color: var(--link);
   text-decoration: none;
   border-bottom: 1px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 .resume a:hover {
   color: var(--link-hover);
@@ -166,12 +186,18 @@ body {
   color: var(--text-muted);
   text-decoration: none;
 }
-.resume-footer a:hover { color: var(--link); }
-.resume-footer p { margin-bottom: 4px; }
+.resume-footer a:hover {
+  color: var(--link);
+}
+.resume-footer p {
+  margin-bottom: 4px;
+}
 
 /* ── Print ── */
 @media print {
-  .no-print { display: none !important; }
+  .no-print {
+    display: none !important;
+  }
 
   :root {
     --bg: #fff;
@@ -193,12 +219,24 @@ body {
     padding: 0;
   }
 
-  .resume h1 { color: #1a1a1a; font-size: 22pt; }
-  .resume h1 + p { color: #444; }
-  .resume h2 { color: #6a4e1e; border-color: #ccc; }
+  .resume h1 {
+    color: #1a1a1a;
+    font-size: 22pt;
+  }
+  .resume h1 + p {
+    color: #444;
+  }
+  .resume h2 {
+    color: #6a4e1e;
+    border-color: #ccc;
+  }
 
-  .contact-links { border-color: #ccc; }
-  .contact-links a { color: #1a5a8a; }
+  .contact-links {
+    border-color: #ccc;
+  }
+  .contact-links a {
+    color: #1a5a8a;
+  }
 }
 
 /* ── Responsive ── */
@@ -206,6 +244,11 @@ body {
   .resume {
     padding: 48px 18px 30px;
   }
-  .resume h1 { font-size: 1.7rem; }
-  .back-link { top: 10px; left: 12px; }
+  .resume h1 {
+    font-size: 1.7rem;
+  }
+  .back-link {
+    top: 10px;
+    left: 12px;
+  }
 }

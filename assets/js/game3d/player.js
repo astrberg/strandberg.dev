@@ -517,23 +517,46 @@ export class Player3D {
     const { forward, back, left, right, running, isDragging } = inputState;
     const speed = PLAYER_SPEED * (running ? PLAYER_RUN_MULT : 1.0) * delta;
 
-    let mx = 0, mz = 0;
+    let mx = 0,
+      mz = 0;
 
     if (isDragging) {
       // Mouse steering mode: W/S move along camera direction, A/D strafe sideways
       const yaw = inputState.cameraYaw;
-      if (forward) { mx -= Math.sin(yaw); mz -= Math.cos(yaw); }
-      if (back)    { mx += Math.sin(yaw); mz += Math.cos(yaw); }
-      if (left)    { mx -= Math.sin(yaw + Math.PI / 2); mz -= Math.cos(yaw + Math.PI / 2); }
-      if (right)   { mx -= Math.sin(yaw - Math.PI / 2); mz -= Math.cos(yaw - Math.PI / 2); }
+      if (forward) {
+        mx -= Math.sin(yaw);
+        mz -= Math.cos(yaw);
+      }
+      if (back) {
+        mx += Math.sin(yaw);
+        mz += Math.cos(yaw);
+      }
+      if (left) {
+        mx -= Math.sin(yaw + Math.PI / 2);
+        mz -= Math.cos(yaw + Math.PI / 2);
+      }
+      if (right) {
+        mx -= Math.sin(yaw - Math.PI / 2);
+        mz -= Math.cos(yaw - Math.PI / 2);
+      }
     } else {
       // Keyboard-only mode: A/D rotate character and camera, W/S move relative to character rotation
       const turnSpeed = 2.5 * delta;
-      if (left)    { this.group.rotation.y += turnSpeed; }
-      if (right)   { this.group.rotation.y -= turnSpeed; }
+      if (left) {
+        this.group.rotation.y += turnSpeed;
+      }
+      if (right) {
+        this.group.rotation.y -= turnSpeed;
+      }
 
-      if (forward) { mx += Math.sin(this.group.rotation.y); mz += Math.cos(this.group.rotation.y); }
-      if (back)    { mx -= Math.sin(this.group.rotation.y); mz -= Math.cos(this.group.rotation.y); }
+      if (forward) {
+        mx += Math.sin(this.group.rotation.y);
+        mz += Math.cos(this.group.rotation.y);
+      }
+      if (back) {
+        mx -= Math.sin(this.group.rotation.y);
+        mz -= Math.cos(this.group.rotation.y);
+      }
     }
 
     const wasMoving = this._isMoving;
@@ -732,6 +755,60 @@ export class ThirdPersonCamera {
       { passive: false }
     );
 
+    // Touch support for camera rotation and pinch-to-zoom
+    let lastTouchDist = 0;
+
+    canvas.addEventListener(
+      'touchstart',
+      e => {
+        if (e.touches.length === 1) {
+          this._isDragging = true;
+          this._lastMX = e.touches[0].clientX;
+          this._lastMY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+          e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+
+    window.addEventListener('touchend', e => {
+      if (e.touches.length === 0) {
+        this._isDragging = false;
+      }
+    });
+
+    window.addEventListener(
+      'touchmove',
+      e => {
+        if (e.touches.length === 1 && this._isDragging) {
+          const dx = e.touches[0].clientX - this._lastMX;
+          const dy = e.touches[0].clientY - this._lastMY;
+          this._lastMX = e.touches[0].clientX;
+          this._lastMY = e.touches[0].clientY;
+          this.yaw -= dx * 0.006;
+          this.pitch += dy * 0.005;
+          this.pitch = Math.max(this.minPitch, Math.min(this.maxPitch, this.pitch));
+          e.preventDefault();
+        } else if (e.touches.length === 2) {
+          e.preventDefault();
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (lastTouchDist > 0) {
+            const diff = lastTouchDist - dist;
+            this.dist += diff * 0.05;
+            this.dist = Math.max(this.minDist, Math.min(this.maxDist, this.dist));
+          }
+          lastTouchDist = dist;
+        }
+      },
+      { passive: false }
+    );
+
     canvas.addEventListener('contextmenu', e => e.preventDefault());
   }
 
@@ -759,7 +836,7 @@ export class ThirdPersonCamera {
       let diff = targetYaw - this.yaw;
       // Normalize difference to [-PI, PI] to find the shortest rotation direction
       diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-      
+
       const lerpSpeed = 0.035; // Adjust this value to make the follow slower or faster
       this.yaw += diff * lerpSpeed;
     }
