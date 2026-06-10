@@ -25,6 +25,3 @@ When the user asks you to commit changes, follow this systematic workflow:
      - `docs: ...` for documentation modifications
      - `style: ...` for layout, styling, or formatting tweaks
    - Keep the subject line concise (under 60 characters) and written in the imperative mood (e.g., "add controls" instead of "added controls").
-
-3. **Verify the commit**:
-   - Run `git log -n 1` or `git status` to verify the commit succeeded.
