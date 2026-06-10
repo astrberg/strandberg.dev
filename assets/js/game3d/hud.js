@@ -1,6 +1,20 @@
 import * as THREE from 'three';
 import { input } from './input.js';
 
+const LOADING_TIPS = [
+  "Tip: The Agile Coach in the Town Hall facilitates standups at 9:00 AM sharp.",
+  "Tip: Running away from legacy code bugs is a valid refactoring strategy.",
+  "Tip: Press Shift to sprint. Coffee breaks also restore your movement energy.",
+  "Tip: If the world isn't rendering, check that your graphics drivers are up to date.",
+  "Tip: Don't stand in the red/error stack traces during production outages.",
+  "Tip: Kobolds in the Fargodeep Mine are extremely protective of their stack traces.",
+  "Tip: Speak to Smith Argus if you need help refactoring your weapons and armor.",
+  "Tip: Press Enter to open the chat log, or tap the chat frame on mobile.",
+  "Tip: You can execute abilities in slots 1-4 by pressing the numeric keys.",
+  "Tip: Commit early and push often to avoid massive merge conflicts.",
+  "Tip: If you segfault, you will resurrect at the nearest graveyard (Northshire Abbey)."
+];
+
 // ── WoW-style HUD manager ─────────────────────────────────────────────────────
 // All manipulation is via the DOM elements defined in world/index.html.
 
@@ -53,6 +67,13 @@ export class HUD3D {
     // Loading
     this._loadingScreen = document.getElementById('loading-screen');
     this._loadingFill = document.getElementById('loading-bar-fill');
+    this._loadingStatus = document.getElementById('loading-status');
+    this._loadingTip = document.getElementById('loading-tip');
+
+    if (this._loadingTip) {
+      const idx = Math.floor(Math.random() * LOADING_TIPS.length);
+      this._loadingTip.textContent = `"${LOADING_TIPS[idx]}"`;
+    }
 
     // Minimap
     this._miniCanvas = document.getElementById('minimap-canvas');
@@ -106,6 +127,35 @@ export class HUD3D {
   // ── Loading bar ────────────────────────────────────────────────────────────
   setLoadingProgress(pct) {
     this._loadingFill.style.width = pct + '%';
+    if (this._loadingStatus) {
+      let status = "Loading CITADEL...";
+      if (pct < 10) {
+        status = "Initializing engine...";
+      } else if (pct < 15) {
+        status = "Configuring global lighting...";
+      } else if (pct < 25) {
+        status = "Compiling terrain mesh...";
+      } else if (pct < 45) {
+        status = "Downloading campus assets...";
+      } else if (pct < 55) {
+        status = "Laying down streets and roads...";
+      } else if (pct < 65) {
+        status = "Constructing buildings and offices...";
+      } else if (pct < 75) {
+        status = "Filling Crystal Lake...";
+      } else if (pct < 85) {
+        status = "Instancing forest boundary...";
+      } else if (pct < 90) {
+        status = "Importing employee assets...";
+      } else if (pct < 95) {
+        status = "Spawning QA test bugs...";
+      } else if (pct < 98) {
+        status = "Pre-rendering 3D campus...";
+      } else {
+        status = "Deploying to production!";
+      }
+      this._loadingStatus.textContent = status;
+    }
   }
 
   hideLoading() {

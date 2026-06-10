@@ -432,6 +432,21 @@ export class NPC3D {
   }
 
   update(delta, player, hud) {
+    this._frameTick = (this._frameTick || 0) + 1;
+    this._throttledFactor = 1;
+
+    // Fast distance check
+    const distPlayerX = this.group.position.x - player.position.x;
+    const distPlayerZ = this.group.position.z - player.position.z;
+    const distSq = distPlayerX * distPlayerX + distPlayerZ * distPlayerZ;
+
+    // Throttle updates for distant NPCs if not in combat and not dead
+    if (distSq > 100 * 100 && !this.combatTarget && !this.isDead) {
+      if (this._frameTick % 15 !== 0) return;
+      delta *= 15;
+      this._throttledFactor = 15;
+    }
+
     if (this._mixer) this._mixer.update(delta);
 
     if (this.isDead) {
@@ -540,7 +555,7 @@ export class NPC3D {
       }
     }
 
-    const step = this.patrolSpeed;
+    const step = this.patrolSpeed * (this._throttledFactor || 1);
     current.x += (dx / dist) * step;
     current.z += (dz / dist) * step;
     current.y = getHeightAt(current.x, current.z);

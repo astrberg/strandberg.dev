@@ -80,6 +80,13 @@ body {
   background: linear-gradient(90deg, #4a3000, #e8b820, #4a3000);
   transition: width 0.15s linear;
 }
+#loading-status {
+  color: #c0d8b0;
+  font-size: 0.82rem;
+  margin-bottom: 16px;
+  min-height: 1.2rem;
+  letter-spacing: 1px;
+}
 #loading-tip {
   color: #5a6850;
   font-style: italic;

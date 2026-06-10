@@ -31,31 +31,73 @@ export async function loadEnvironmentModels() {
   );
 }
 
-function placeEnvModel(key, scene, x, z, scale = 1, rotY = 0, castShadow = true) {
+function createInstancedModel(key, scene, instances, castShadow) {
   const gltf = envLoaded[key];
-  if (!gltf) return null;
-  const model = gltf.scene.clone(true);
+  if (!gltf || instances.length === 0) return;
 
-  model.scale.setScalar(scale);
-  model.rotation.y = rotY;
+  const template = gltf.scene;
+  template.position.set(0, 0, 0);
+  template.rotation.set(0, 0, 0);
+  template.scale.set(1, 1, 1);
+  template.updateMatrixWorld(true);
 
-  // Calculate bounding box in default position to find the correct bottom offset
-  model.position.set(0, 0, 0);
-  model.updateMatrixWorld(true);
-  const bbox = new THREE.Box3().setFromObject(model);
+  const meshes = [];
+  template.traverse(child => {
+    if (child.isMesh) meshes.push(child);
+  });
 
-  const gy = getHeightAt(x, z);
-  // Align the actual bottom of the mesh to the terrain
-  model.position.set(x, gy - bbox.min.y, z);
+  const bbox = new THREE.Box3().setFromObject(template);
+  const templateMinY = bbox.min.y;
 
-  model.traverse(c => {
-    if (c.isMesh) {
-      c.castShadow = castShadow;
-      c.receiveShadow = castShadow;
+  const instancedMeshes = meshes.map(mesh => {
+    const instMesh = new THREE.InstancedMesh(
+      mesh.geometry,
+      mesh.material,
+      instances.length
+    );
+    instMesh.castShadow = castShadow;
+    instMesh.receiveShadow = castShadow;
+    scene.add(instMesh);
+    return { mesh, instMesh };
+  });
+
+  const dummy = new THREE.Object3D();
+  instances.forEach((inst, index) => {
+    const gy = getHeightAt(inst.x, inst.z);
+    const yOffset = -templateMinY * inst.scale;
+
+    dummy.position.set(inst.x, gy + yOffset, inst.z);
+    dummy.rotation.set(0, inst.rotY, 0);
+    dummy.scale.setScalar(inst.scale);
+    dummy.updateMatrix();
+
+    instancedMeshes.forEach(({ mesh, instMesh }) => {
+      const matrix = dummy.matrix.clone().multiply(mesh.matrixWorld);
+      instMesh.setMatrixAt(index, matrix);
+    });
+  });
+
+  instancedMeshes.forEach(({ instMesh }) => {
+    instMesh.instanceMatrix.needsUpdate = true;
+  });
+}
+
+function renderInstancedGroup(key, scene, instances) {
+  if (!instances || instances.length === 0) return;
+
+  const shadowCastList = [];
+  const noShadowList = [];
+
+  instances.forEach(inst => {
+    if (inst.castShadow) {
+      shadowCastList.push(inst);
+    } else {
+      noShadowList.push(inst);
     }
   });
-  scene.add(model);
-  return model;
+
+  createInstancedModel(key, scene, shadowCastList, true);
+  createInstancedModel(key, scene, noShadowList, false);
 }
 
 // ── Campus trees ───────────────────────────────────────────────────────────
@@ -164,6 +206,16 @@ export function buildForest(scene) {
     }
   }
 
+  const placements = {
+    tree_a: [],
+    tree_b: [],
+    trees_large: [],
+    trees_medium: [],
+    rock_a: [],
+    rock_b: [],
+    rock_c: [],
+  };
+
   // Render Trees
   if (hasModels) {
     for (const t of treeInstances) {
@@ -171,7 +223,14 @@ export function buildForest(scene) {
       const key = treeKeys[Math.floor(seededRand(seed++) * treeKeys.length)];
       const rotY = seededRand(seed++) * Math.PI * 2;
       const isBoundary = getHeightAt(t.x, t.z) > 4.0;
-      placeEnvModel(key, scene, t.x, t.z, rs * 6, rotY, !isBoundary);
+      
+      placements[key].push({
+        x: t.x,
+        z: t.z,
+        scale: rs * 6,
+        rotY: rotY,
+        castShadow: !isBoundary
+      });
 
       // Register collider for valley trees (where height <= 4.0)
       if (getHeightAt(t.x, t.z) <= 4.0) {
@@ -227,7 +286,13 @@ export function buildForest(scene) {
     ];
     for (const [cx, cz] of clusterPositions) {
       const key = clusterKeys[Math.abs(cx + cz) % clusterKeys.length];
-      placeEnvModel(key, scene, cx, cz, 8, seededRand(cx * 7 + cz) * Math.PI * 2, false);
+      placements[key].push({
+        x: cx,
+        z: cz,
+        scale: 8,
+        rotY: seededRand(cx * 7 + cz) * Math.PI * 2,
+        castShadow: false
+      });
     }
   }
 
@@ -264,8 +329,22 @@ export function buildForest(scene) {
       const rs = 3 + seededRand(rseed++) * 5;
       const gy = getHeightAt(rx, rz);
       const isBoundaryRock = gy > 5.0;
-      placeEnvModel(key, scene, rx, rz, rs, seededRand(rseed++) * Math.PI * 2, !isBoundaryRock);
+      
+      placements[key].push({
+        x: rx,
+        z: rz,
+        scale: rs,
+        rotY: seededRand(rseed++) * Math.PI * 2,
+        castShadow: !isBoundaryRock
+      });
     }
+  }
+
+  // Render instanced models in bulk
+  if (hasModels) {
+    Object.keys(placements).forEach(key => {
+      renderInstancedGroup(key, scene, placements[key]);
+    });
   }
 }
 

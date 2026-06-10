@@ -41,6 +41,8 @@ const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerH
 // ── HUD ───────────────────────────────────────────────────────────────────────
 const hud = new HUD3D();
 
+let sunLight = null;
+
 // ── Async world build with loading progress ───────────────────────────────────
 async function buildWorld() {
   clearColliders();
@@ -50,7 +52,8 @@ async function buildWorld() {
   buildSky(scene);
   hud.setLoadingProgress(10);
 
-  buildLighting(scene);
+  const lighting = buildLighting(scene);
+  sunLight = lighting.sun;
   hud.setLoadingProgress(15);
 
   buildTerrain(scene);
@@ -77,10 +80,7 @@ async function buildWorld() {
 
   await tick();
   buildForest(scene);
-  hud.setLoadingProgress(88);
-
-  await tick();
-  hud.setLoadingProgress(95);
+  hud.setLoadingProgress(85);
 
   await tick();
 }
@@ -123,13 +123,19 @@ function getZone(px, pz) {
   // Load saved level & experience progress
   player.loadProgress(hud);
 
-  hud.setLoadingProgress(100);
-  await tick();
-  hud.hideLoading();
+  // Async-load glTF models (graceful fallback to box mesh if files absent) before hiding the loading screen
+  const totalModels = 1 + npcs.length;
+  let loadedCount = 0;
+  const onModelLoaded = () => {
+    loadedCount++;
+    const progress = 85 + Math.round((loadedCount / totalModels) * 13);
+    hud.setLoadingProgress(progress);
+  };
 
-  // Async-load glTF models (graceful fallback to box mesh if files absent)
-  player.initModel();
-  npcs.forEach((npc, i) => npc.initModel(i));
+  await Promise.all([
+    player.initModel().then(onModelLoaded),
+    ...npcs.map((npc, i) => npc.initModel(i).then(onModelLoaded))
+  ]);
 
   // Initial HUD state
   hud.updatePlayer(100, 100, 100, 100);
@@ -139,6 +145,17 @@ function getZone(px, pz) {
   hud.addChat('Welcome, traveler. Your journey begins.', 'sys');
   hud.addChat('WASD · Move  |  Right-click drag · Look  |  E · Talk  |  Scroll · Zoom', 'sys');
   hud.addChat('1-4 · Action bar  |  Shift · Run', 'sys');
+
+  // Perform initial updates to camera and player to prevent position pop-ins
+  player.update(input, 0, hud);
+  camCtrl.update(input, 0);
+
+  // Render a single frame so WebGL compiles shaders/materials and displays the completed world
+  renderer.render(scene, camera);
+
+  hud.setLoadingProgress(100);
+  await tick();
+  hud.hideLoading();
 
   let currentZone = initialZone;
   let targetNPC = null;
@@ -265,6 +282,12 @@ function getZone(px, pz) {
 
     player.update(input, delta, hud);
     camCtrl.update(input, delta);
+
+    // Update shadow frustum to center on the player
+    if (sunLight) {
+      sunLight.position.set(player.position.x + 120, 180, player.position.z - 80);
+      sunLight.target = player.group;
+    }
 
     for (const npc of npcs) npc.update(delta, player, hud);
 
